@@ -56,12 +56,6 @@ input:focus,textarea:focus{border-color:var(--accent)}
   .seed .btn b{display:block;color:var(--text);font-weight:600;font-size:13px}
   .seed .btn span{color:var(--muted)}
 
-  .toneset{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
-  .toneset label{margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);cursor:pointer;display:flex;flex-direction:column;gap:2px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);font-weight:600}
-  .toneset label.on{border-color:var(--accent);background:rgba(247,147,26,.08)}
-  .toneset input{display:none}
-  .toneset .tone-desc{display:block;color:var(--muted);font-size:11px;margin-top:0;font-weight:400}
-
   .stages{display:flex;flex-direction:column;gap:16px}
   .stage{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
   .stage-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--panel-2)}
@@ -74,6 +68,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   .post{padding:14px 16px;border-top:1px solid var(--border)}
   .post + .post{border-left:1px solid var(--border)}
   @media (max-width:780px){.post + .post{border-left:none}}
+  @media (max-width:780px){.btn.small{min-height:44px;padding:8px 16px}}
   .post-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .post-head .net{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.3px}
   .net.x{color:var(--x)}
