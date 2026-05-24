@@ -88,3 +88,29 @@ test('sanitizeVenueText leaves clean text alone', () => {
   const s = 'Denver Bitcoin meetup at 6:30 PM';
   assert.equal(engine.sanitizeVenueText(s), s);
 });
+
+const JSONLD_HTML = `<html><head>
+<script type="application/ld+json">
+{"@type":"Event","name":"Bitcoin in Healthcare","startDate":"2026-05-28T18:30:00-06:00",
+ "description":"How to build a practice on a Bitcoin standard.","url":"https://luma.com/pks2tmn1",
+ "location":{"@type":"Place","name":"Denver"}}
+</` + `script></head><body></body></html>`;
+
+test('parseJsonLdEvent pulls name/startDate/description/url', () => {
+  const ev = engine.parseJsonLdEvent(JSONLD_HTML);
+  assert.equal(ev.name, 'Bitcoin in Healthcare');
+  assert.equal(ev.startDate, '2026-05-28T18:30:00-06:00');
+  assert.match(ev.description, /Bitcoin standard/);
+  assert.equal(ev.url, 'https://luma.com/pks2tmn1');
+});
+
+test('parseJsonLdEvent returns null when absent', () => {
+  assert.equal(engine.parseJsonLdEvent('<html></html>'), null);
+});
+
+test('validateEvent requires a title and (date or description)', () => {
+  assert.equal(engine.validateEvent({ title:'X', date_iso:'2026-01-01T00:00:00Z' }), true);
+  assert.equal(engine.validateEvent({ title:'X', description:'hi' }), true);
+  assert.equal(engine.validateEvent({ title:'' }), false);
+  assert.equal(engine.validateEvent({ title:'X' }), false);
+});
