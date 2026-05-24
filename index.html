@@ -266,12 +266,33 @@ function fmtHashtags(s){
   if(!s) return '';
   return s.split(/\s+/).filter(Boolean).map(h => h.startsWith('#') ? h : '#'+h).join(' ');
 }
+function offsetFromIso(iso){
+  if(/[zZ]$/.test(iso)) return 0;
+  const m = String(iso).match(/([+-])(\d{2}):?(\d{2})$/);
+  if(!m) return null;
+  const mins = (+m[2]) * 60 + (+m[3]);
+  return m[1] === '-' ? -mins : mins;
+}
+function offsetLabel(mins){
+  const sign = mins < 0 ? '-' : '+';
+  const a = Math.abs(mins);
+  const h = Math.floor(a / 60), mm = a % 60;
+  return `GMT${sign}${h}${mm ? ':' + String(mm).padStart(2, '0') : ''}`;
+}
 function fmtParts(iso, tz){
-  const opts = { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZoneName:'short' };
-  if(tz) opts.timeZone = tz;
-  const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(new Date(iso))
-    .reduce((a,p) => (a[p.type] = p.value, a), {});
-  return parts;
+  const base = { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' };
+  const toObj = parts => parts.reduce((a,x)=>(a[x.type]=x.value,a),{});
+  if(tz){
+    return toObj(new Intl.DateTimeFormat('en-US', { ...base, timeZoneName:'short', timeZone: tz }).formatToParts(new Date(iso)));
+  }
+  const off = offsetFromIso(iso);
+  if(off === null){
+    return toObj(new Intl.DateTimeFormat('en-US', { ...base, timeZoneName:'short', timeZone:'UTC' }).formatToParts(new Date(iso)));
+  }
+  const shifted = new Date(new Date(iso).getTime() + off * 60000);
+  const p = toObj(new Intl.DateTimeFormat('en-US', { ...base, timeZone:'UTC' }).formatToParts(shifted));
+  p.timeZoneName = offsetLabel(off);
+  return p;
 }
 function formatEventTime(iso, tz){
   if(!iso) return '';
@@ -292,15 +313,13 @@ function clockIn(iso, tz){
 }
 function timezoneConversions(iso, tz){
   if(!iso) return '';
-  const zones = [tz || 'America/Denver', 'America/New_York', 'America/Los_Angeles'];
   const seen = new Set();
   const out = [];
-  for(const z of zones){
+  for(const z of [tz, 'America/New_York', 'America/Los_Angeles']){
     let label;
     try{ label = clockIn(iso, z); }catch(e){ continue; }
-    if(seen.has(label)) continue;
-    seen.add(label);
-    out.push(label);
+    if(!label || seen.has(label)) continue;
+    seen.add(label); out.push(label);
   }
   return out.join(' · ');
 }
@@ -665,6 +684,7 @@ async function importLumaUrl(){
     applyEvent(ev);
     setImportStatus('Imported from Luma and generated the campaign.', 'ok');
   }catch(e){
+    console.warn('Luma import failed:', e?.errors ?? e);
     document.getElementById('luma-paste-wrap').hidden = false;
     setImportStatus('Automatic import could not read that Luma page. Paste copied event text or page source below, then parse it here.', 'warn');
   }

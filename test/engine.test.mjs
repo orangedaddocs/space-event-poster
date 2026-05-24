@@ -33,9 +33,17 @@ test('formatEventTime renders in the event zone with short tz label', () => {
   assert.match(out, /6:30 ?PM MDT|6:30 PM MDT/);
 });
 
-test('formatEventTime infers zone from offset when IANA missing', () => {
+test('formatEventTime falls back to the ISO offset when IANA missing (machine-independent)', () => {
   const out = engine.formatEventTime('2026-05-28T18:30:00-06:00', '');
-  assert.match(out, /6:30 PM|6:30 PM/);
+  assert.match(out, /Thu, May 28/);
+  assert.match(out, /6:30 PM GMT-6/);
+});
+
+test('timezoneConversions uses the ISO offset for local when IANA missing', () => {
+  const conv = engine.timezoneConversions('2026-05-28T19:00:00-06:00', '');
+  assert.match(conv, /7:00 PM GMT-6/);
+  assert.match(conv, /9:00 PM EDT/);
+  assert.match(conv, /6:00 PM PDT/);
 });
 
 test('timezoneConversions returns deduped local+ET+PT, DST-correct', () => {
@@ -133,7 +141,8 @@ test('lumaToEvent builds a normalized event from JSON-LD html', () => {
   const ev = engine.lumaToEvent(JSONLD_HTML, 'https://luma.com/pks2tmn1');
   assert.equal(ev.title, 'Bitcoin in Healthcare');
   assert.equal(ev.date_iso, '2026-05-28T18:30:00-06:00');
-  assert.match(ev.date_display, /6:30 PM MDT/);
+  // JSONLD_HTML has no __NEXT_DATA__ timezone, so display falls back to the ISO offset (GMT-6)
+  assert.match(ev.date_display, /6:30 PM GMT-6/);
   assert.equal(ev.luma_url, 'https://luma.com/pks2tmn1');
   assert.ok(engine.validateEvent(ev));
 });
