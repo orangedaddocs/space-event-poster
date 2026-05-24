@@ -18,12 +18,12 @@ The tool must run by:
 
 | Constraint | Rule |
 |---|---|
-| Files | `index.html`, `events.json`, `README.md`, `BUILD_SPEC.md` — that's it. Optional `LICENSE`. |
+| Files | `index.html`, `README.md`, `BUILD_SPEC.md`, `AI_INTEGRATION.md` — that's it. Optional `LICENSE`. |
 | Backend | None. Everything client-side. |
 | Build step | None. No npm, no bundler, no transpiler. |
 | Dependencies | None. No CDN scripts. No Tailwind. No React. Vanilla HTML/CSS/JS only. |
 | Browser support | Modern evergreen (Chrome, Safari, Firefox, Edge — last 2 years). |
-| Offline | Must work offline once loaded for seeded/manual events. `fetch('events.json')` and optional Luma URL imports should fail gracefully. |
+| Offline | Must work offline once loaded for manual entry. Optional Luma URL imports should fail gracefully. |
 | File size | `index.html` < 50 KB uncompressed. |
 | Accessibility | Keyboard-navigable form, semantic HTML, contrast AA. Lighthouse a11y ≥ 90, perf ≥ 95 desktop. |
 | Neutrality | No venue-specific branding in repo text or generated copy (see §10). |
@@ -45,18 +45,17 @@ The tool must run by:
 │        ↑          └──────────────────────────┘       │
 │        │                       ↓                     │
 │   ┌──────────┐        ┌──────────────────┐           │
-│   │ events   │ ──→    │  Render          │           │
-│   │ .json    │        │  (6 stages ×     │           │
+│   │  Luma    │ ──→    │  Render          │           │
+│   │  import  │        │  (6 stages ×     │           │
 │   └──────────┘        │   3 copy cards)  │           │
 │                       └──────────────────┘           │
 └──────────────────────────────────────────────────────┘
 ```
 
 ### Data flow
-1. On load, `fetch('events.json')` populates `VENUE` and `EVENTS` globals.
+1. On load, the form is empty and ready for input.
 2. User either:
    - Pastes a Luma event URL → browser races multiple CORS proxies in parallel + Jina reader; if all fail, user can paste Luma page source/text → parsed into the form.
-   - Clicks a seeded event button → `applyEvent(ev)` fills the form + immediately renders posts.
    - Manually fills the form → clicks **Generate posts** → `readForm()` → `renderOutput(ev)`.
 3. `compose(ev, style, tone, seedBase)` calls `buildStage(stage, ev, style, tone, seed)` for each of the 6 `STAGES` entries and returns a `Post[]` of **length 6**. Each `Post = { stage, when, x, xlong, nostr }`.
 4. `renderOutput(ev)` paints 6 stage cards. Each card has three copy panels (short X / long X / Nostr) with copy buttons and char counts.
@@ -65,21 +64,9 @@ The tool must run by:
 
 ## 3. Data schema
 
-### `events.json`
+### Event object (what the engine consumes)
 
 ```ts
-type EventsFile = {
-  venue: {
-    name: string;
-    city: string;
-    website: string;
-    x_handle?: string;        // include @
-    nostr_npub?: string;      // npub1...
-    default_hashtags: string[];
-  };
-  events: Event[];
-};
-
 type Event = {
   id: string;                 // unique slug
   title: string;
@@ -194,7 +181,7 @@ Four tones, each with its own `openers`/`ctas`/`signoffs` phrase banks (see §6)
 
 ### Layout
 - Two-column grid on desktop, stacked on mobile (`@media (max-width:900px)`).
-- Left column: import card + event-details form + seeded events card.
+- Left column: import card + event-details form.
 - Right column: generated posts + **Posting checklist** panel.
 - Sticky header (navy band): logo left; **`Clear form`** and **`View on GitHub`** buttons right. No "Open Luma" link.
 
@@ -213,7 +200,6 @@ Four tones, each with its own `openers`/`ctas`/`signoffs` phrase banks (see §6)
    - **Style** selector (Structured / Conversational)
    - **Tone** selector (Educational / Welcoming / Cypherpunk / Punchy)
    - **Generate posts** (before any output) / **Regenerate posts ↻** (after output exists)
-3. **Seeded events card** — buttons from `events.json`.
 
 ### Visual style — "Bitcoin Circle"
 - Navy header band (`#0f1129` / `#161837`), light `--bg` page (`#f8f9fc`), white cards.
@@ -241,7 +227,6 @@ Four tones, each with its own `openers`/`ctas`/`signoffs` phrase banks (see §6)
 - `toast` — bottom-center "Copied" confirmation, announced via `aria-live`.
 
 ### Interactions
-- Clicking a seeded event button fills the form AND immediately renders posts.
 - Style/Tone selectors are keyboard-navigable; selected option gets `.on` class with accent border.
 - Copy buttons: `navigator.clipboard.writeText` preferred; **`execCommand('copy')` fallback** for `file://` / non-HTTPS contexts.
 - "Open in X" button uses `https://x.com/intent/tweet?text=...` deep link (short X and long X variants; Nostr is copy-only).
@@ -278,8 +263,8 @@ Use the following phrases as the starting library. Add more, but keep the three 
 
 When rebuilding, the agent must verify all of these by running through them in a headless browser or by tracing logic:
 
-1. **Cold load**: Open `index.html` directly with no server. The form renders; Style defaults to "Conversational"; Tone defaults to "Educational"; seeded event buttons appear (3 of them) if `events.json` is fetchable. Works offline (seeded/manual mode). Copy works on `file://` (clipboard fallback).
-2. **Seeded click**: Click the "Bitcoin in Healthcare" seeded button. Form fills with title, date, speaker, hook, Luma URL. **6 stages** render on the right. The Announcement short X post is ≤ 280 chars and includes the date (with timezone label) and Luma URL.
+1. **Cold load**: Open `index.html` directly with no server. The form renders empty; Style defaults to "Conversational"; Tone defaults to "Educational". Works offline (manual entry). Copy works on `file://` (clipboard fallback).
+2. **Manual entry**: Clear form. Type "Denver Bitcoin Meetup" as the **Title** (visible field), a date/time, and a speaker name. Click Generate. **6 stages** render on the right. The Announcement short X post is ≤ 280 chars; if a speaker @handle was provided it appears in the post.
 3. **Style switch**: Switching Style re-renders instantly. Structured posts open with label-led format; Conversational opens with a hook/question.
 4. **Tone switch**: Switch to "Cypherpunk". Generated posts now begin with "Signal:", "Sovereignty drop:", etc.
 5. **Manual form**: Clear form. Type "Test Event" as the **Title** (visible field), "Sat, Jul 4 · 7pm MDT" as date, "Alice" as speaker. Click Generate. 6 stages render. No errors in console.
@@ -319,7 +304,7 @@ A Settings panel (off by default) that accepts any **OpenAI-compatible endpoint*
 - For the Follow-up stage, add an "Export to Highlighter" button that opens a draft on [Highlighter.com](https://highlighter.com) with a NIP-23 markdown payload.
 
 ### v1.5 — Multi-venue support
-- Allow `events.json` to ship multiple venues; show a venue switcher.
+- Add a venue config + switcher (stored in `localStorage` or a settings panel).
 - Each venue has its own default hashtags and brand color.
 
 ### v1.6 — Recurring event templates
@@ -343,7 +328,7 @@ A Settings panel (off by default) that accepts any **OpenAI-compatible endpoint*
 
 No venue-specific branding anywhere in repo text or generated copy. Allowed neutral terms: "Event Poster," "Denver Bitcoin meetup," "Luma events," "X + Nostr campaigns." `sanitizeVenueText` enforces this on imported content.
 
-To verify, run the venue-neutrality `rg` check defined in the design spec (`docs/superpowers/specs/2026-05-23-event-poster-v2-design.md` §10) against `README.md`, `BUILD_SPEC.md`, `events.json`, `LICENSE`, and `index.html`. Expected: no matches. The literal forbidden-term pattern is kept only in that design-spec file (which is outside the checked set), so this build spec stays clean of the very terms it forbids.
+To verify, run the venue-neutrality `rg` check defined in the design spec (`docs/superpowers/specs/2026-05-23-event-poster-v2-design.md` §10) against `README.md`, `BUILD_SPEC.md`, `LICENSE`, and `index.html`. Expected: no matches. The literal forbidden-term pattern is kept only in that design-spec file (which is outside the checked set), so this build spec stays clean of the very terms it forbids.
 
 ---
 
@@ -351,7 +336,6 @@ To verify, run the venue-neutrality `rg` check defined in the design spec (`docs
 
 - All files render correctly when served from GitHub Pages.
 - All acceptance tests in §7 pass.
-- The 3 seeded events from `events.json` appear as clickable buttons and produce sensible posts in all 4 tones and both styles.
 - Lighthouse Accessibility score ≥ 90, Performance ≥ 95 on desktop.
 - `README.md` includes 3-step GitHub Pages deploy instructions.
 - `index.html` < 50 KB uncompressed.
@@ -365,7 +349,7 @@ To verify, run the venue-neutrality `rg` check defined in the design spec (`docs
 
 ## Appendix B — Brand & voice references
 
-- Default venue profile lives in `events.json` and can be customized without changing the post engine.
+- Default venue profile constants live in `index.html` and can be customized without changing the post engine.
 - Accent: Bitcoin orange `#f7931a` on near-black `#0f1129` (navy).
 - Cross-post targets:
   - X: `https://x.com/intent/tweet?text=...`

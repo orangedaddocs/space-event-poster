@@ -22,8 +22,7 @@ Paste a Luma event URL, get a ready-to-copy X + Nostr campaign.
 - **Timezone-aware**: reads the IANA zone from Luma (e.g. `America/Denver`); labels every time with the correct abbreviation (MDT/EDT/etc.); Live-stage posts show local + ET + PT conversions, deduped and DST-correct
 - **Editable drafts** with one-click copy + "Open in X" using your edited text; clipboard fallback for `file://` / non-HTTPS contexts
 - **Posting checklist** to keep each event's campaign consistent
-- **Seeded events** load from `events.json` so examples are ready to test instantly
-- **Zero build, zero backend, zero dependencies** — a single HTML file. Works on GitHub Pages or just `open index.html`; works fully offline for seeded/manual events
+- **Zero build, zero backend, zero dependencies** — a single HTML file. Works on GitHub Pages or just `open index.html`; works fully offline (manual entry + paste fallback)
 
 ---
 
@@ -31,7 +30,7 @@ Paste a Luma event URL, get a ready-to-copy X + Nostr campaign.
 
 ### Run it locally — most private
 
-Open `index.html` in any browser. Done — it works offline with the built-in example events, and copy works via the `execCommand` fallback. For the full experience (loading `events.json`, clipboard on every browser), serve it from your own machine:
+Open `index.html` in any browser. Done — it works offline for manual entry, and copy works via the `execCommand` fallback. For full clipboard support on every browser, serve it from your own machine:
 
 ```
 python3 -m http.server 8787      →  http://localhost:8787
@@ -41,13 +40,13 @@ Nothing leaves your machine except the optional Luma import.
 
 ### Self-host — sovereign + shareable
 
-It's one static file. Put `index.html` (plus optional `events.json` for your own seeded events) behind any web server you control — your own box or your own domain — so your community can use a URL *you* own.
+It's one static file. Put `index.html` behind any web server you control — your own box or your own domain — so your community can use a URL *you* own.
 
 ### GitHub Pages — easiest, but centralized
 
 Free ~3-minute hosting if you don't mind the platform:
 
-1. Push the repo (the app only needs `index.html`; `events.json` is optional).
+1. Push the repo (it's just `index.html`).
 2. In repo **Settings → Pages → Source**: `main` branch, `/ (root)` → Save.
 3. Live at `https://<your-username>.github.io/event-poster/`.
 
@@ -70,50 +69,7 @@ Free ~3-minute hosting if you don't mind the platform:
 
 ## Customize for your meetup
 
-### 1. Update venue info
-
-Edit `events.json`:
-
-```json
-{
-  "venue": {
-    "name": "Your Meetup",
-    "city": "Your City",
-    "website": "https://example.com",
-    "x_handle": "@yourmeetup",
-    "nostr_npub": "npub1...",
-    "default_hashtags": ["#Bitcoin", "#YourCity"]
-  },
-  "events": [ ... ]
-}
-```
-
-### 2. Seed your own events
-
-Add objects to the `events` array. Each event:
-
-```json
-{
-  "id": "unique-slug",
-  "title": "Event title",
-  "date_iso": "2026-06-01T18:00:00-06:00",
-  "tz": "America/Denver",
-  "date_display": "Mon, Jun 1 · 6:00 PM MDT",
-  "host": "Your Meetup",
-  "speaker": "Speaker Name",
-  "speaker_org": "Their company",
-  "speaker_x": "@speaker",
-  "speaker_nostr": "npub1...",
-  "description": "One-line hook that explains why this event matters.",
-  "hashtags": ["#Bitcoin", "#YourTopic"],
-  "luma_url": "https://luma.com/xxxx",
-  "tone": "educational"
-}
-```
-
-The `tz` field accepts any IANA zone string (e.g. `America/New_York`, `America/Chicago`, `Europe/London`). It lets the Live-stage post show correct timezone abbreviations and cross-zone conversions. If omitted, the tool falls back to the UTC offset in `date_iso`.
-
-### 3. Rebrand the colors
+### 1. Rebrand the colors
 
 In `index.html`, change the `:root` CSS variables:
 
@@ -123,11 +79,11 @@ In `index.html`, change the `:root` CSS variables:
 --bg:       #f8f9fc;   /* Page background */
 ```
 
-### 4. Edit the tone presets
+### 2. Edit the tone presets
 
 Open `index.html`, find `const TONES = {...}` in the `<script>` block, and edit the openers / ctas / signoffs phrases for each tone. Add phrases to any array; the engine rotates through them via a seed so successive generations differ.
 
-### 5. (Optional) Have an AI write the posts instead of templates
+### 3. (Optional) Have an AI write the posts instead of templates
 
 The default engine fills templates — fast, free, fully local, but the wording follows fixed patterns. To wire up a real LLM for genuinely custom copy (bring-your-own-key, works with a local Ollama or OpenRouter — never locked to one vendor, templates stay the fallback), follow **[`AI_INTEGRATION.md`](AI_INTEGRATION.md)**.
 
