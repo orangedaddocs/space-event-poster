@@ -96,6 +96,13 @@ input:focus,textarea:focus{border-color:var(--accent)}
 
   .footer{margin-top:30px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+  .seg [role=radio]{border:1px solid var(--border);border-radius:12px;padding:8px 10px;cursor:pointer;font-size:13px;font-weight:600;background:var(--white)}
+  .seg [role=radio] .desc{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px}
+  .seg [role=radio][aria-checked=true]{border-color:var(--accent);background:rgba(247,147,26,.08)}
+
+  .checklist label{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text-2);margin:6px 0}
+
   /* toast */
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ok);color:#0b0d10;padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;pointer-events:none;transition:all .25s}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -104,83 +111,72 @@ input:focus,textarea:focus{border-color:var(--accent)}
 <body>
 <div class="wrap">
 
-<header>
-  <div class="brand">
-    <div class="logo"><span class="dot"></span> Event Poster</div>
-    <div class="subtitle">Turn Luma events into X + Nostr campaigns.</div>
-  </div>
-  <div class="header-actions">
+<div class="topbar">
+  <div><div class="logo"><span class="dot"></span> Event Poster</div>
+  <div class="sub">Turn Luma events into X + Nostr campaigns.</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn ghost" id="btn-clear">Clear form</button>
-    <a class="btn ghost" href="https://github.com/orangedaddocs/event-poster" target="_blank" rel="noopener" id="repo-link">View on GitHub</a>
-    <a class="btn primary" href="https://luma.com" target="_blank" rel="noopener">Open Luma</a>
+    <a class="btn ghost" href="https://github.com/orangedaddocs/event-poster" target="_blank" rel="noopener">View on GitHub</a>
   </div>
-</header>
+</div>
 
 <div class="grid">
 
   <!-- LEFT: form -->
-  <section class="panel">
-    <h2>Luma import</h2>
-    <div class="panel-body">
+  <section>
+  <div class="card">
+    <div class="overline">Luma import</div>
+    <div class="card-body">
       <label for="luma_import_url">Luma event URL</label>
-      <input type="text" id="luma_import_url" placeholder="https://luma.com/tsija7uu" />
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn primary" id="btn-import-luma">Import from Luma</button>
-        <button type="button" class="btn ghost" id="btn-toggle-luma-paste">Paste Luma text/HTML</button>
+      <input type="text" id="luma_import_url" placeholder="https://luma.com/…" />
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
+        <button class="btn primary" id="btn-import-luma">Import from Luma</button>
+        <button class="btn" id="btn-toggle-luma-paste">Paste text/HTML</button>
       </div>
       <div id="luma-paste-wrap" hidden>
         <label for="luma_paste">Luma page text or HTML</label>
-        <textarea id="luma_paste" placeholder="If browser import is blocked, paste the Luma page source or copied event text here."></textarea>
-        <div style="margin-top:10px">
-          <button type="button" class="btn" id="btn-parse-luma-paste">Use pasted Luma content</button>
-        </div>
+        <textarea id="luma_paste" placeholder="If import is blocked, paste the Luma page source or copied event text here."></textarea>
+        <button class="btn" id="btn-parse-luma-paste" style="margin-top:8px">Use pasted content</button>
       </div>
-      <div class="import-status" id="import-status">The Luma event is the source of truth; the fields below are just for edits.</div>
+      <div class="hint" id="import-status" aria-live="polite" style="font-size:12px;color:var(--muted);margin-top:9px">The Luma event is the source of truth; the fields below are just for edits.</div>
     </div>
+  </div>
 
-    <h2 style="border-top:1px solid var(--border)">Event details</h2>
-    <div class="panel-body">
-      <input type="hidden" id="title" />
-
+  <div class="card">
+    <div class="overline">Event details</div>
+    <div class="card-body">
+      <label for="title">Title</label>
+      <input type="text" id="title" placeholder="Event title" />
       <label for="date">Date / time</label>
       <input type="text" id="date" placeholder="Imported from Luma" />
-
       <label for="speaker">Speaker(s)</label>
       <input type="text" id="speaker" placeholder="Speaker name" />
-
       <label for="speaker_x">Speaker X handle (optional)</label>
       <input type="text" id="speaker_x" placeholder="@speaker" />
-
       <label for="speaker_nostr">Speaker Nostr npub (optional)</label>
-      <input type="text" id="speaker_nostr" placeholder="npub1..." />
-
+      <input type="text" id="speaker_nostr" placeholder="npub1…" />
       <label for="hook">Hook / one-liner</label>
-      <textarea id="hook" placeholder="Short event hook or one-liner"></textarea>
-
+      <textarea id="hook" placeholder="Short event hook"></textarea>
       <label for="luma">Luma / RSVP URL</label>
-      <input type="text" id="luma" placeholder="https://luma.com/..." />
-
+      <input type="text" id="luma" placeholder="https://luma.com/…" />
       <label for="youtube">YouTube recording URL (optional)</label>
-      <input type="text" id="youtube" placeholder="https://youtube.com/watch?v=..." />
-
+      <input type="text" id="youtube" placeholder="https://youtube.com/watch?v=…" />
       <label for="hashtags">Hashtags (space separated)</label>
       <input type="text" id="hashtags" placeholder="#Bitcoin #Denver #Nostr" />
 
-      <label>Tone</label>
-      <div class="toneset" id="toneset">
-        <label data-tone="punchy"><span>🥊 Punchy</span><span class="tone-desc">Short, energetic, hype</span><input type="radio" name="tone" value="punchy" /></label>
-        <label data-tone="educational"><span>📚 Educational</span><span class="tone-desc">Why it matters, what you'll learn</span><input type="radio" name="tone" value="educational" checked /></label>
-        <label data-tone="cypherpunk"><span>🕶️ Cypherpunk</span><span class="tone-desc">Sovereignty, signal not noise</span><input type="radio" name="tone" value="cypherpunk" /></label>
-        <label data-tone="welcoming"><span>🤝 Welcoming</span><span class="tone-desc">Newcomers, community first</span><input type="radio" name="tone" value="welcoming" /></label>
-      </div>
+      <label id="style-label">Style</label>
+      <div class="seg" id="styleset" role="radiogroup" aria-labelledby="style-label"></div>
+      <label id="tone-label">Tone</label>
+      <div class="seg" id="toneset" role="radiogroup" aria-labelledby="tone-label"></div>
 
-      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn primary" id="btn-generate">Generate posts</button>
-      </div>
+      <button class="btn primary" id="btn-generate" style="margin-top:14px;width:100%;justify-content:center">Generate posts</button>
     </div>
+  </div>
 
-    <h2 style="border-top:1px solid var(--border)">Or load a seeded event</h2>
-    <div class="seed" id="seed"></div>
+  <div class="card">
+    <div class="overline">Or load a seeded event</div>
+    <div class="card-body" id="seed" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
   </section>
 
   <!-- RIGHT: output -->
@@ -192,25 +188,22 @@ input:focus,textarea:focus{border-color:var(--accent)}
       </div>
     </div>
 
-    <div class="panel" style="margin-top:16px" id="checklist-panel" hidden>
-      <h2>15-min posting checklist</h2>
-      <div class="panel-body">
+    <div class="card" id="checklist-panel" hidden>
+      <div class="overline">Posting checklist</div>
+      <div class="card-body">
         <div class="checklist">
-          <label><input type="checkbox" /> Tag speaker on X + paste Nostr npub if available</label>
-          <label><input type="checkbox" /> Add 1 image (event flyer, speaker headshot, or venue shot)</label>
-          <label><input type="checkbox" /> Post Announcement on both X + Nostr right now</label>
-          <label><input type="checkbox" /> Schedule 7-day reminder (calendar or scheduler)</label>
-          <label><input type="checkbox" /> Schedule 24-hr reminder</label>
-          <label><input type="checkbox" /> Day-of: post the Live update at start</label>
-          <label><input type="checkbox" /> Day-after: post Follow-up + recording link</label>
-          <label><input type="checkbox" /> When YouTube is live: post the recap and put the video link in the reply</label>
-          <label><input type="checkbox" /> Repost to the event thread or community channel</label>
+          <label><input type="checkbox" /> Look up + tag the speaker, add one image</label>
+          <label><input type="checkbox" /> Post the Announcement now (X + Nostr)</label>
+          <label><input type="checkbox" /> Schedule the 7-day + 24-hr reminders</label>
+          <label><input type="checkbox" /> Day-of: post the Live update</label>
+          <label><input type="checkbox" /> Day-after: post the Follow-up</label>
+          <label><input type="checkbox" /> When the recording's up: post the recap, link in reply</label>
         </div>
-        <div class="quicklaunch">
-          <a class="btn" target="_blank" rel="noopener" href="https://x.com/compose/post">↗ Open X compose</a>
-          <a class="btn" target="_blank" rel="noopener" href="https://primal.net/home">↗ Open Primal (Nostr)</a>
-          <a class="btn" target="_blank" rel="noopener" href="https://damus.io">↗ Open Damus</a>
-          <a class="btn" target="_blank" rel="noopener" href="https://highlighter.com">↗ Highlighter (long-form Nostr)</a>
+        <div class="quicklaunch" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <a class="btn small" target="_blank" rel="noopener" href="https://x.com/compose/post">↗ X compose</a>
+          <a class="btn small" target="_blank" rel="noopener" href="https://primal.net/home">↗ Primal</a>
+          <a class="btn small" target="_blank" rel="noopener" href="https://damus.io">↗ Damus</a>
+          <a class="btn small" target="_blank" rel="noopener" href="https://highlighter.com">↗ Highlighter</a>
         </div>
       </div>
     </div>
