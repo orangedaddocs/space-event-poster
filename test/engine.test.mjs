@@ -243,3 +243,32 @@ test('youtube recap: X says link in reply, nostr embeds url', () => {
   assert.doesNotMatch(recap.x, /youtube\.com/);
   assert.match(recap.nostr, /youtube\.com\/watch\?v=abc/);
 });
+
+test('buildStage returns empty strings for an unknown stage id', () => {
+  const out = engine.buildStage({ id:'nope', label:'X', when:'' }, EV, 'conversational', 'educational', 0);
+  assert.equal(out.x, '');
+  assert.equal(out.xlong, '');
+  assert.equal(out.nostr, '');
+});
+
+test('no dangling RSVP/CTA label when luma_url is empty', () => {
+  const ev = { ...EV, luma_url:'' };
+  for(const style of ['structured','conversational']){
+    for(const p of engine.compose(ev, style, 'educational')){
+      const all = p.x + '\n' + p.xlong + '\n' + p.nostr;
+      assert.doesNotMatch(all, /RSVP:\s*(\n|$)/i, `dangling "RSVP:" in ${style}/${p.stage}`);
+      assert.doesNotMatch(all, /RSVP →\s*(\n|$)/i, `dangling "RSVP →" in ${style}/${p.stage}`);
+    }
+  }
+});
+
+test('stripLinks removes bare domains without a path', () => {
+  assert.doesNotMatch(engine.stripLinks('come to luma.com today'), /luma\.com/);
+  assert.doesNotMatch(engine.stripLinks('see bit.ly/abc here'), /bit\.ly/);
+  assert.doesNotMatch(engine.stripLinks('at mysite.app/path ok'), /mysite\.app/);
+});
+
+test('compose still includes RSVP url when present (regression guard)', () => {
+  const a = engine.compose(EV, 'structured', 'educational')[0];
+  assert.match(a.x, /luma\.com\/pks2tmn1/);
+});

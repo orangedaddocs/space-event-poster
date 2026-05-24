@@ -357,10 +357,13 @@ function enforceXLimit(text){
   return trimTo(clean, X_LIMIT);
 }
 function stripLinks(text){
+  const TLD = 'com|org|net|io|co|app|xyz|ly|me|gg|tv|dev|info|us';
   return (text || '')
     .split('\n')
-    .map(line => line.replace(/https?:\/\/\S+/g, '').replace(/\b[\w.-]+\.(?:com|org|net|io|co)\/\S*/gi, ''))
-    .map(line => line.replace(/\bRSVP:\s*$/i, '').replace(/[ \t]+$/,''))
+    .map(line => line
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(new RegExp('\\b[\\w-]+(?:\\.[\\w-]+)*\\.(?:' + TLD + ')(?:\\/\\S*)?', 'gi'), ''))
+    .map(line => line.replace(/\b(?:RSVP|Watch|Stream):\s*$/i, '').replace(/[ \t]+$/, ''))
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -573,8 +576,8 @@ function buildStage(stage, ev, style, tone, seed){
     case 'announce':
       return {
         x: conv
-          ? J(`${opener} ${hook || ev.title}`, ev.speaker && `${ev.speaker} is showing us.`, date && `📅 ${date}`, `${cta} ${rsvp}`, tags)
-          : J(`New event: ${ev.title}`, date && `📅 ${date}`, `📍 ${venue}`, tag && `🎤 ${tag}`, `${cta} ${rsvp}`, tags),
+          ? J(`${opener} ${hook || ev.title}`, ev.speaker && `${ev.speaker} is showing us.`, date && `📅 ${date}`, (rsvp ? `${cta} ${rsvp}` : cta), tags)
+          : J(`New event: ${ev.title}`, date && `📅 ${date}`, `📍 ${venue}`, tag && `🎤 ${tag}`, (rsvp ? `${cta} ${rsvp}` : cta), tags),
         xlong: stripLinks(J(ev.title, '', hook || 'A new one is on the calendar.', '',
           ev.speaker ? `With ${ev.speaker}${ev.speaker_org ? ` (${ev.speaker_org})` : ''}.` : '', date, venue, '',
           signoff, '', "RSVP's in the reply 👇", yt && 'Stream link in the reply too.', tags)),
@@ -584,20 +587,20 @@ function buildStage(stage, ev, style, tone, seed){
     case 'rem7': {
       const d = Math.max(daysUntil(ev.date_iso), 7);
       return {
-        x: conv ? J(`One week out: ${ev.title}.`, hook, `RSVP: ${rsvp}`, tags)
-                : J(`${d} days out — ${ev.title}`, date, `RSVP: ${rsvp}`, tags),
+        x: conv ? J(`One week out: ${ev.title}.`, hook, (rsvp && `RSVP: ${rsvp}`), tags)
+                : J(`${d} days out — ${ev.title}`, date, (rsvp && `RSVP: ${rsvp}`), tags),
         xlong: stripLinks(J(`${d} days out: ${ev.title}`, '', date, ev.speaker && `With ${ev.speaker}.`, '',
           hook || 'Easy to miss, worth having on the calendar.', '', 'Know someone who’d enjoy it? Bring them.', '', signoff, tags)),
-        nostr: J(`${d} days out: ${ev.title}`, date, hook, '', `RSVP: ${rsvp}`, '', tags)
+        nostr: J(`${d} days out: ${ev.title}`, date, hook, '', (rsvp && `RSVP: ${rsvp}`), '', tags)
       };
     }
     case 'rem1':
       return {
-        x: conv ? J(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}.`, `${date}`, `Last call to RSVP → ${rsvp}`, tags)
-                : J(`Tomorrow — ${ev.title}`, `${date} · ${venue}`, tag, `${rsvp}`, tags),
+        x: conv ? J(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}.`, `${date}`, (rsvp ? `Last call to RSVP → ${rsvp}` : cta), tags)
+                : J(`Tomorrow — ${ev.title}`, `${date} · ${venue}`, tag, rsvp, tags),
         xlong: stripLinks(J(`Tomorrow: ${ev.title}`, '', date, venue, ev.speaker && `With ${ev.speaker}.`, '',
           hook || 'One more nudge before this happens.', '', 'RSVP if you’re coming and bring someone curious.', '', "Link’s in the reply 👇", tags)),
-        nostr: J(`Tomorrow: ${ev.title}`, ev.speaker && `With ${ev.speaker}`, date, `📍 ${venue}`, '', `Last chance to RSVP:`, rsvp, '', tags)
+        nostr: J(`Tomorrow: ${ev.title}`, ev.speaker && `With ${ev.speaker}`, date, `📍 ${venue}`, '', (rsvp && `Last chance to RSVP:`), rsvp, '', tags)
       };
     case 'live':
       return {
@@ -628,6 +631,8 @@ function buildStage(stage, ev, style, tone, seed){
           'If you couldn’t make it, here’s the one bit worth your time: [one moment worth watching]', '',
           `Watch: ${yt || '[paste YouTube link]'}`, '', tags)
       };
+    default:
+      return { x:'', xlong:'', nostr:'' };
   }
 }
 
@@ -781,10 +786,6 @@ function toggleLumaPaste(){
   wrap.hidden = !wrap.hidden;
   setImportStatus(wrap.hidden ? 'The Luma event is the source of truth; the fields below are just for edits.' : 'Paste copied Luma event text or page source, then click Use pasted Luma content.', '');
 }
-function cleanupPost(text){
-  return (text || '').trim().replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
-}
-
 /* ---------- Render ---------- */
 function renderOutput(ev){
   const posts = buildPosts(ev);
