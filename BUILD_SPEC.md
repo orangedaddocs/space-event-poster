@@ -58,7 +58,7 @@ The tool must run by:
    - Pastes a Luma event URL → browser races multiple CORS proxies in parallel + Jina reader; if all fail, user can paste Luma page source/text → parsed into the form.
    - Clicks a seeded event button → `applyEvent(ev)` fills the form + immediately renders posts.
    - Manually fills the form → clicks **Generate posts** → `readForm()` → `renderOutput(ev)`.
-3. `buildPosts(ev)` produces a `Post[]` of **length 6**. Each `Post = { stage, when, x, xlong, nostr }`.
+3. `compose(ev, style, tone, seedBase)` calls `buildStage(stage, ev, style, tone, seed)` for each of the 6 `STAGES` entries and returns a `Post[]` of **length 6**. Each `Post = { stage, when, x, xlong, nostr }`.
 4. `renderOutput(ev)` paints 6 stage cards. Each card has three copy panels (short X / long X / Nostr) with copy buttons and char counts.
 
 ---
@@ -116,14 +116,13 @@ type Post = {
 
 ```ts
 type Tone = {
-  intro:    string[];   // for Announcement openers
-  cta:      string[];   // for "RSVP" lines
-  reminder: string[];   // 7-day reminders, may contain {days} and {title_short}
-  day:      string[];   // 24-hour reminders
-  live:     string[];   // day-of "live now" lines
-  followup: string[];   // post-event recap openers
+  openers:  string[];   // opening lines used across stages (Announcement, reminders, etc.)
+  ctas:     string[];   // call-to-action lines (RSVP prompts)
+  signoffs: string[];   // closing lines (post-event or encouragement)
 };
 ```
+
+There is also a `STYLES` knob with two options: `structured` and `conversational`. Both are defined in `const STYLES` alongside `const TONES`.
 
 ---
 
@@ -151,7 +150,7 @@ Default: Conversational. Changing Style re-renders all drafts instantly (no extr
 
 ### Tone knob (voice)
 
-Four tones, each with its own intro/cta/reminder/day/live/followup phrase banks. Changing Tone also re-renders instantly.
+Four tones, each with its own `openers`/`ctas`/`signoffs` phrase banks (see §6). Changing Tone also re-renders instantly.
 
 ### Building blocks each post must include
 - **Announcement**: tone intro + title + date_display + venue + speaker (with @handle if available) + hook + CTA + Luma URL + hashtags
@@ -169,8 +168,8 @@ Four tones, each with its own intro/cta/reminder/day/live/followup phrase banks.
 - The `tz` field in each event object accepts an IANA zone string (e.g. `"America/Denver"`). When absent, falls back to the UTC offset embedded in `date_iso`.
 
 ### Variation
-- Use `pick(array)` to randomly select intro/cta/etc lines so successive generations don't look identical.
-- Substitute `{days}` and `{title_short}` tokens in reminder strings before rendering.
+- Use `pickWith(arr, seed)` to deterministically select `openers`/`ctas`/`signoffs` entries based on a numeric seed so successive generations differ without being fully random. Each stage gets a different seed offset (`seed + i * 7`).
+- Day counts are computed via `daysUntil(iso)` at render time. There are no `{days}` or `{title_short}` token placeholders — day counts are interpolated directly in the stage builder.
 
 ### Character counting
 - For short X posts, display `length / 280` and flash `.warn` if over.
@@ -251,39 +250,27 @@ Four tones, each with its own intro/cta/reminder/day/live/followup phrase banks.
 
 ## 6. Tone preset content
 
-Use the following phrases as the starting library. Add more, but keep the categories.
-
-### Punchy
-- intro: "Mark your calendar.", "Lock it in.", "This one's huge.", "Don't sleep on this."
-- cta: "RSVP now →", "Grab a spot →", "Get on the list →", "We'll see you there →"
-- reminder: "{days} days.", "{days} days out.", "We're close.", "Almost time."
-- day: "Tomorrow.", "24 hours.", "1 sleep.", "It's happening tomorrow."
-- live: "LIVE NOW.", "Doors open. Pull up.", "It's go time.", "Started. Come through."
-- followup: "What a night.", "That was 🔥.", "Recap drop.", "If you missed it —"
+Use the following phrases as the starting library. Add more, but keep the three arrays (`openers`, `ctas`, `signoffs`). The engine selects entries via `pickWith(arr, seed)` — a deterministic rotation based on a numeric seed — so successive generations differ without being fully random. Day counts are computed via `daysUntil(iso)` (no `{days}` or `{title_short}` token substitution).
 
 ### Educational
-- intro: "New event:", "Up next:", "Join us for:", "Coming up:"
-- cta: "Free RSVP →", "Save your seat →", "More details + RSVP →", "Sign up to attend →"
-- reminder: "{days} days until {title_short}.", "Reminder: {title_short} in {days} days.", "Coming up in {days} days:"
-- day: "Tomorrow:", "24 hours out:", "We're 1 day away:"
-- live: "Happening now:", "Live now:", "We're live with"
-- followup: "Thanks to everyone who came out for", "Recap:", "Here's what we covered:"
-
-### Cypherpunk
-- intro: "Signal:", "Sovereignty drop:", "From the underground:", "For the orange-pilled:"
-- cta: "RSVP. No KYC.", "Show up. Stay sovereign.", "Lock in →", "Reserve your seat. Cash welcome."
-- reminder: "{days} blocks-ish until we meet.", "T-minus {days} days.", "{days} days. Be there."
-- day: "Tomorrow. Be there.", "24h. No excuses.", "1 sleep until signal."
-- live: "We're live. No retreat.", "LIVE now.", "On-chain in spirit. Live in person."
-- followup: "That's a wrap.", "If you weren't there — fix that next time.", "Notes from the front lines:"
+- openers: `"Ever wonder"`, `"Here's a good one:"`, `"Worth knowing about:"`, `"New on the calendar — and worth your time:"`
+- ctas: `"Free to RSVP →"`, `"Save your seat →"`, `"Details + RSVP →"`, `"Sign up to attend →"`
+- signoffs: `"Bring your questions."`, `"Come curious."`
 
 ### Welcoming
-- intro: "You're invited:", "Come hang with us:", "All welcome:", "New to Bitcoin? Start here:"
-- cta: "Free + open to everyone →", "First time? Just show up →", "RSVP and say hi →", "Bring a friend →"
-- reminder: "Just {days} days until we hang out again.", "{days} days out. Hope to see you.", "Counting down — {days} days."
-- day: "See you tomorrow.", "We're 1 day out — looking forward to it.", "Tomorrow we hang."
-- live: "We're live. Door's open — come on in.", "Started, but pull up anytime.", "Hanging out now."
-- followup: "Thanks for hanging with us.", "What a fun crowd.", "Loved having everyone."
+- openers: `"You're invited 👋"`, `"Come hang with us:"`, `"New to Bitcoin? Start here:"`, `"All welcome —"`
+- ctas: `"First time? Just show up →"`, `"RSVP and say hi →"`, `"Bring a friend →"`
+- signoffs: `"Newcomers genuinely welcome."`, `"No experience needed — just curiosity."`
+
+### Cypherpunk
+- openers: `"Signal:"`, `"For the orange-pilled:"`, `"Sound money, in person:"`, `"Tune out the noise —"`
+- ctas: `"RSVP. No KYC."`, `"Show up. Stay sovereign."`, `"Lock it in →"`
+- signoffs: `"Be there."`, `"Bring cash, bring questions."`
+
+### Punchy
+- openers: `"Mark it. 📅"`, `"This one's big."`, `"Don't sleep on this:"`, `"Lock it in."`
+- ctas: `"RSVP now →"`, `"Grab a spot →"`, `"Go. →"`
+- signoffs: `"See you there."`, `"Pull up."`
 
 ---
 
@@ -298,7 +285,7 @@ When rebuilding, the agent must verify all of these by running through them in a
 5. **Manual form**: Clear form. Type "Test Event" as the **Title** (visible field), "Sat, Jul 4 · 7pm MDT" as date, "Alice" as speaker. Click Generate. 6 stages render. No errors in console.
 6. **Copy**: Click Copy on any X post. Clipboard contains the exact post text including emojis and newlines. Toast appears.
 7. **Edit drafts**: Edit a generated post body. Character counts update live, Copy uses the edited text, and Open in X uses the edited text.
-8. **Char count warn**: Enter a 500-char hook. The Announcement X post char counter shows red `> 280`.
+8. **Char count warn**: Enter a 500-char hook. The Announcement X post char counter shows red `> 280`. (Requires `--warn` to be defined in `:root`; it is set to `#e5484d`.)
 9. **Live timezone**: The Live-stage post shows local + ET + PT conversions, deduped, DST-correct (e.g. `7:00 PM MDT · 9:00 PM EDT · 6:00 PM PDT`).
 10. **Mobile**: Resize to 375px width. Form stacks above output. Buttons remain tappable (≥ 44px hit target). Inputs at 16px font (no iOS focus-zoom).
 11. **Network**: Cold load has no analytics, fonts, or CDN assets. Luma import races proxy endpoints only after the user clicks **Import from Luma**.

@@ -110,7 +110,7 @@ In `index.html`, change the `:root` CSS variables:
 
 ### 4. Edit the tone presets
 
-Open `index.html`, find `const TONES = {...}` in the `<script>` block, and edit the intro / cta / reminder phrases for each tone. Add phrases to any array; the engine picks randomly so successive generations differ.
+Open `index.html`, find `const TONES = {...}` in the `<script>` block, and edit the openers / ctas / signoffs phrases for each tone. Add phrases to any array; the engine rotates through them via a seed so successive generations differ.
 
 ---
 

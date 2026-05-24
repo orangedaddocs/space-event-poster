@@ -13,7 +13,9 @@
   --text:#13141f; --text-2:#5c6178; --muted:#9196a8;
   --accent:#f7931a; --accent-deep:#e07f04; --on-accent:#0f1129;
   --x:#1d9bf0; --xlong:#7c5cc4; --nostr:#9b59ff;
-  --ok:#30a46c; --error:#e5484d;
+  --ok:#30a46c; --error:#e5484d; --warn:#e5484d;
+  --panel:#ffffff;
+  --panel-2:#fbfaf8;
   --radius:16px; --radius-pill:9999px;
   --shadow:0 4px 16px rgba(0,0,0,.05);
   --font:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -44,7 +46,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
 input[type=text],textarea,select{width:100%;background:var(--field);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;outline:none}
 @media (max-width:900px){ input[type=text],textarea,select{font-size:16px} }
 input:focus,textarea:focus{border-color:var(--accent)}
-  textarea{min-height:80px;resize:vertical;font-family:var(--mono);font-size:13px}
+  textarea{min-height:80px;resize:vertical;font-family:var(--font);font-size:13px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   .import-status{font-size:12px;color:var(--muted);margin-top:8px}
@@ -74,7 +76,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   .net.x{color:var(--x)}
   .net.xlong{color:var(--xlong)}
   .net.nostr{color:var(--nostr)}
-  .post-body{display:block;width:100%;min-height:64px;resize:vertical;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.45;color:var(--text);overflow:hidden}
+  .post-body{display:block;width:100%;min-height:64px;resize:vertical;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;white-space:pre-wrap;font-family:var(--font);font-size:13px;line-height:1.45;color:var(--text);overflow:hidden}
   .post-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--muted)}
   .count.warn{color:var(--warn)}
   .post-actions{display:flex;gap:6px;flex-wrap:wrap}
@@ -176,7 +178,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   <!-- RIGHT: output -->
   <section>
     <div id="output">
-      <div class="panel empty">
+      <div class="card empty">
         <h3>Paste a Luma event or click a seeded event</h3>
         <div>You'll get 6 stages with short X, long X, and Nostr copy — ready to copy.</div>
       </div>
