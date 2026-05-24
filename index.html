@@ -238,6 +238,34 @@
 const X_LIMIT = 280;
 const X_LONG_SOFT_LIMIT = 2000;
 const NOSTR_SOFT_LIMIT = 500; // Nostr has no hard limit, but readability matters
+
+function decodeEntities(s){
+  const named = { amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", '#39':"'", nbsp:' ' };
+  return (s || '').replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, code) => {
+    if(code[0] === '#'){
+      const n = code[1] === 'x' || code[1] === 'X' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : m;
+    }
+    const key = code.toLowerCase();
+    return key in named ? named[key] : m;
+  });
+}
+function normalizeLumaUrl(s){
+  const raw = (s || '').trim();
+  if(!raw) return '';
+  if(/^https?:\/\//i.test(raw)) return raw;
+  // strip a bare "luma.com/" prefix before prepending the full URL
+  const stripped = raw.replace(/^luma\.com\//i, '');
+  return `https://luma.com/${stripped.replace(/^\/+/, '')}`;
+}
+function lumaSlug(url){
+  try{ return new URL(normalizeLumaUrl(url)).pathname.split('/').filter(Boolean)[0] || ''; }
+  catch(e){ return (url || '').replace(/^https?:\/\/[^/]+\//, '').split(/[?#/]/)[0]; }
+}
+function fmtHashtags(s){
+  if(!s) return '';
+  return s.split(/\s+/).filter(Boolean).map(h => h.startsWith('#') ? h : '#'+h).join(' ');
+}
 /* ENGINE-END */
 
 const FALLBACK_DATA = {
@@ -351,10 +379,6 @@ function postText(id){
 function openXCompose(text){
   window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
 }
-function fmtHashtags(s){
-  if(!s) return '';
-  return s.split(/\s+/).filter(Boolean).map(h=> h.startsWith('#')?h:'#'+h).join(' ');
-}
 function venueLabel(){
   return [VENUE.name, VENUE.city].filter(Boolean).join(' · ');
 }
@@ -366,24 +390,6 @@ function sanitizeVenueText(s){
     .replace(new RegExp(`\\b${oldVenue}\\b`, 'g'), 'the venue')
     .replace(new RegExp(`\\b${oldMember}\\b`, 'gi'), 'community member')
     .replace(new RegExp(`${oldTag}\\b`, 'g'), '#Bitcoin');
-}
-function decodeHtml(s){
-  const t = document.createElement('textarea');
-  t.innerHTML = s || '';
-  return t.value;
-}
-function normalizeLumaUrl(s){
-  const raw = (s || '').trim();
-  if(!raw) return '';
-  if(/^https?:\/\//i.test(raw)) return raw;
-  return `https://luma.com/${raw.replace(/^\/+/, '')}`;
-}
-function lumaSlug(url){
-  try{
-    return new URL(normalizeLumaUrl(url)).pathname.split('/').filter(Boolean)[0] || '';
-  }catch(e){
-    return (url || '').replace(/^https?:\/\/[^/]+\//, '').split(/[?#/]/)[0];
-  }
 }
 function findSeedByLumaUrl(url){
   const slug = lumaSlug(url);
@@ -417,7 +423,7 @@ function findEventJsonLd(html){
   for(const script of scripts){
     const json = script.replace(/^<script[^>]*>/i, '').replace(/<\/script>$/i, '');
     try{
-      const data = JSON.parse(decodeHtml(json));
+      const data = JSON.parse(decodeEntities(json));
       const items = Array.isArray(data) ? data : [data];
       const event = items.find(item => item && (item['@type']==='Event' || (Array.isArray(item['@type']) && item['@type'].includes('Event'))));
       if(event) return event;
@@ -429,7 +435,7 @@ function findNextDataEvent(html){
   const match = html.match(/<script id=["']__NEXT_DATA__["'] type=["']application\/json["']>([\s\S]*?)<\/script>/i);
   if(!match) return null;
   try{
-    const data = JSON.parse(decodeHtml(match[1]));
+    const data = JSON.parse(decodeEntities(match[1]));
     return data?.props?.pageProps?.initialData?.data || null;
   }catch(e){ return null; }
 }
@@ -442,7 +448,7 @@ function metaContent(html, key){
   ];
   for(const pattern of patterns){
     const match = html.match(pattern);
-    if(match) return decodeHtml(match[1]);
+    if(match) return decodeEntities(match[1]);
   }
   return '';
 }
@@ -450,7 +456,7 @@ function stripLumaTitle(title){
   return (title || '').replace(/\s+·\s+Luma.*$/i, '').trim();
 }
 function cleanReaderLine(line){
-  return decodeHtml(line || '')
+  return decodeEntities(line || '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')

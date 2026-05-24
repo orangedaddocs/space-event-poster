@@ -11,7 +11,8 @@ if (!m) throw new Error('ENGINE-START/ENGINE-END markers not found in index.html
 
 // Names we expose for testing. Extend this list as the engine grows.
 const EXPORTS = [
-  'X_LIMIT', 'X_LONG_SOFT_LIMIT', 'NOSTR_SOFT_LIMIT'
+  'X_LIMIT', 'X_LONG_SOFT_LIMIT', 'NOSTR_SOFT_LIMIT',
+  'decodeEntities', 'normalizeLumaUrl', 'lumaSlug', 'fmtHashtags'
 ];
 
 const code = m[1] + `\n;globalThis.__engine = { ${EXPORTS.join(', ')} };`;
