@@ -79,8 +79,7 @@ input:focus,textarea:focus{border-color:var(--accent)}
   .net.x{color:var(--x)}
   .net.xlong{color:var(--xlong)}
   .net.nostr{color:var(--nostr)}
-  .post-body{background:#0f1216;border:1px solid var(--border);border-radius:10px;padding:10px 12px;white-space:pre-wrap;font-family:var(--mono);font-size:13px;min-height:60px}
-  textarea.post-body{display:block;width:100%;min-height:150px;resize:vertical;line-height:1.45}
+  .post-body{display:block;width:100%;min-height:64px;resize:vertical;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.45;color:var(--text);overflow:hidden}
   .post-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--muted)}
   .count.warn{color:var(--warn)}
   .post-actions{display:flex;gap:6px;flex-wrap:wrap}
@@ -695,15 +694,21 @@ let EVENTS = FALLBACK_DATA.events.slice();
 
 /* ---------- Helpers ---------- */
 function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg||'Copied'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
-function copy(text){ navigator.clipboard.writeText(text).then(()=>toast('Copied')); }
-function postText(id){
-  const node = document.getElementById(id);
-  return 'value' in node ? node.value : node.innerText;
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg || 'Copied'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1400); }
+function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(() => toast('Copied')).catch(() => fallbackCopy(text));
+  } else { fallbackCopy(text); }
 }
-function openXCompose(text){
-  window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); toast('Copied'); }catch(e){ toast('Copy failed — select and copy manually'); }
+  document.body.removeChild(ta);
 }
+function postText(id){ const n = document.getElementById(id); return 'value' in n ? n.value : n.innerText; }
+function openXCompose(text){ window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener'); }
 function findSeedByLumaUrl(url){
   const slug = lumaSlug(url);
   if(!slug) return null;
@@ -778,136 +783,102 @@ function toggleLumaPaste(){
   setImportStatus(wrap.hidden ? 'The Luma event is the source of truth; the fields below are just for edits.' : 'Paste copied Luma event text or page source, then click Use pasted Luma content.', '');
 }
 /* ---------- Render ---------- */
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function netBlock(label, cls, id, text, limit, mode, stageLabel){
+  const count = mode === 'short' ? `${text.length} / ${X_LIMIT}` : `${text.length} chars`;
+  const open = (cls === 'x' || cls === 'xlong')
+    ? `<button class="btn small" data-open-x="${id}" aria-label="Open ${label} for ${stageLabel} in X">Open in X</button>` : '';
+  return `<div class="post">
+    <div class="post-head"><span class="net ${cls}">${label}</span>
+      <div class="post-actions"><button class="btn small" data-copy="${id}" aria-label="Copy ${label} for ${stageLabel}">Copy</button>${open}</div></div>
+    <textarea class="post-body" id="${id}" data-mode="${mode}" data-limit="${limit}" spellcheck="true" aria-label="${label} draft for ${stageLabel}">${escapeHtml(text)}</textarea>
+    <div class="post-meta"><span class="count${(mode==='short'&&text.length>X_LIMIT)?' warn':''}" data-target="${id}">${count}</span><span class="note" data-target="${id}"></span></div>
+  </div>`;
+}
 function renderOutput(ev){
-  const posts = buildPosts(ev);
+  const style = currentStyle(); const tone = currentTone();
+  const posts = compose(ev, style, tone, Date.now() % 997);
   const out = document.getElementById('output');
-  out.innerHTML = '';
-  posts.forEach((p, i) => {
-    const stage = el(`
-      <div class="stage">
-        <div class="stage-head">
-          <div class="title"><span class="badge">${i+1} / ${posts.length}</span> ${p.stage}</div>
-          <div class="when">${p.when}</div>
-        </div>
-        <div class="posts">
-          <div class="post">
-            <div class="post-head">
-              <span class="net x">𝕏 — X / Twitter</span>
-              <div class="post-actions">
-                <button class="btn small" data-copy="x-${i}">Copy</button>
-                <button class="btn small" data-open-x="x-${i}">Open in X</button>
-              </div>
-            </div>
-            <textarea class="post-body" id="x-${i}" spellcheck="true">${escapeHtml(p.x)}</textarea>
-            <div class="post-meta">
-              <span class="count${p.x.length>X_LIMIT?' warn':''}" data-target="x-${i}" data-limit="${X_LIMIT}">${p.x.length} / ${X_LIMIT}</span>
-              <span>${p.x.length>X_LIMIT?'⚠️ trim required':''}</span>
-            </div>
-          </div>
-          <div class="post">
-            <div class="post-head">
-              <span class="net xlong">𝕏 — Long / link-light</span>
-              <div class="post-actions">
-                <button class="btn small" data-copy="xl-${i}">Copy</button>
-              </div>
-            </div>
-            <textarea class="post-body" id="xl-${i}" spellcheck="true">${escapeHtml(p.xlong)}</textarea>
-            <div class="post-meta">
-              <span class="count${p.xlong.length>X_LONG_SOFT_LIMIT?' warn':''}" data-target="xl-${i}" data-limit="${X_LONG_SOFT_LIMIT}">${p.xlong.length} chars</span>
-              <span>${p.xlong.includes('http')?'has link':'no main-post link'}</span>
-            </div>
-          </div>
-          <div class="post">
-            <div class="post-head">
-              <span class="net nostr">⚡ Nostr</span>
-              <div class="post-actions">
-                <button class="btn small" data-copy="n-${i}">Copy</button>
-              </div>
-            </div>
-            <textarea class="post-body" id="n-${i}" spellcheck="true">${escapeHtml(p.nostr)}</textarea>
-            <div class="post-meta">
-              <span class="count" data-target="n-${i}" data-limit="${NOSTR_SOFT_LIMIT}">${p.nostr.length} chars</span>
-              <span>${p.nostr.length>NOSTR_SOFT_LIMIT?'(long — consider Highlighter)':''}</span>
-            </div>
-          </div>
-        </div>
+  out.innerHTML = posts.map((p, i) => `
+    <div class="card stage">
+      <div class="stage-head"><span class="badge">${i+1} / ${posts.length}</span> <b>${p.stage}</b> <span class="when">${p.when}</span></div>
+      <div class="posts">
+        ${netBlock('𝕏 — X', 'x', 'x-'+i, p.x, X_LIMIT, 'short', p.stage)}
+        ${netBlock('𝕏 — Long / link-light', 'xlong', 'xl-'+i, p.xlong, X_LONG_SOFT_LIMIT, 'long', p.stage)}
+        ${netBlock('⚡ Nostr', 'nostr', 'n-'+i, p.nostr, NOSTR_SOFT_LIMIT, 'nostr', p.stage)}
       </div>
-    `);
-    out.appendChild(stage);
-  });
+    </div>`).join('');
   document.getElementById('checklist-panel').hidden = false;
-  out.querySelectorAll('[data-copy]').forEach(b=>{
-    b.addEventListener('click', ()=> copy(postText(b.dataset.copy)));
-  });
-  out.querySelectorAll('[data-open-x]').forEach(b=>{
-    b.addEventListener('click', ()=> openXCompose(postText(b.dataset.openX)));
-  });
-  out.querySelectorAll('.post-body').forEach(editor=>{
-    editor.addEventListener('input', ()=> updateCount(editor.id));
-  });
+  out.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => copyText(postText(b.dataset.copy))));
+  out.querySelectorAll('[data-open-x]').forEach(b => b.addEventListener('click', () => openXCompose(postText(b.dataset.openX))));
+  out.querySelectorAll('.post-body').forEach(t => { autoGrow(t); updateCount(t.id); t.addEventListener('input', () => { manualEdited = true; autoGrow(t); updateCount(t.id); }); });
+  window.scrollTo({ top: out.offsetTop - 20, behavior:'smooth' });
+}
+function autoGrow(t){ t.style.height = 'auto'; t.style.height = Math.max(t.scrollHeight, 64) + 'px'; }
+
+function updateCount(id){
+  const node = document.getElementById(id);
+  const count = document.querySelector(`.count[data-target="${id}"]`);
+  const note = document.querySelector(`.note[data-target="${id}"]`);
+  if(!node || !count) return;
+  const text = node.value; const len = text.length; const mode = node.dataset.mode;
+  count.textContent = mode === 'short' ? `${len} / ${X_LIMIT}` : `${len} chars`;
+  count.classList.toggle('warn', mode === 'short' && len > X_LIMIT);
+  if(note){
+    if(mode === 'short') note.textContent = len > X_LIMIT ? '⚠️ trim required' : '';
+    else if(mode === 'long') note.textContent = /https?:\/\//.test(text) ? 'has link' : 'no in-post link';
+    else note.textContent = len > NOSTR_SOFT_LIMIT ? '(long — consider Highlighter)' : '';
+  }
 }
 
-function updateCount(targetId){
-  const count = document.querySelector(`.count[data-target="${targetId}"]`);
-  if(!count) return;
-  const limit = Number(count.dataset.limit || 0);
-  const text = postText(targetId);
-  const length = text.length;
-  const isShortX = limit === X_LIMIT;
-  count.textContent = isShortX ? `${length} / ${limit}` : `${length} chars`;
-  count.classList.toggle('warn', !!limit && length > limit);
-  const note = count.nextElementSibling;
-  if(note && isShortX) note.textContent = length > limit ? '⚠️ trim required' : '';
-  if(note && targetId.startsWith('xl-')) note.textContent = text.includes('http') ? 'has link' : 'no main-post link';
+/* ---------- Form / selectors / state ---------- */
+const STYLE_OPTS = [['conversational','Conversational','Reads like a person wrote it'],['structured','Structured','Label-led, scannable']];
+const TONE_OPTS = [['educational','📚 Educational','Why it matters'],['welcoming','🤝 Welcoming','Newcomers first'],['cypherpunk','🕶️ Cypherpunk','Signal, sovereignty'],['punchy','🥊 Punchy','Short, high energy']];
+let manualEdited = false;
+function renderSeg(id, opts, current){
+  const wrap = document.getElementById(id);
+  wrap.innerHTML = opts.map(([v,l,d]) =>
+    `<div role="radio" tabindex="0" data-val="${v}" aria-checked="${v===current}">${l}<span class="desc">${d}</span></div>`).join('');
+  wrap.querySelectorAll('[role=radio]').forEach(r => {
+    const choose = () => { wrap.querySelectorAll('[role=radio]').forEach(x => x.setAttribute('aria-checked', x===r)); onKnobChange(); };
+    r.addEventListener('click', choose);
+    r.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); choose(); } });
+  });
 }
+function currentStyle(){ return document.querySelector('#styleset [aria-checked=true]')?.dataset.val || 'conversational'; }
+function currentTone(){ return document.querySelector('#toneset [aria-checked=true]')?.dataset.val || 'educational'; }
+function onKnobChange(){ if(document.getElementById('title').value.trim()) renderOutput(readForm()); }
 
-function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[c])); }
-
-/* ---------- Form ---------- */
+function val(id){ return document.getElementById(id).value.trim(); }
+function setVal(id,v){ document.getElementById(id).value = v || ''; }
 function readForm(){
-  const tone = document.querySelector('input[name=tone]:checked')?.value || 'educational';
   return {
-    title: val('title'),
-    date_display: val('date'),
-    date_iso: '', // user form doesn't require ISO; seeded events provide it
-    speaker: val('speaker'),
-    speaker_x: val('speaker_x'),
-    speaker_nostr: val('speaker_nostr'),
-    hook: val('hook'),
-    luma_url: val('luma'),
-    youtube_url: val('youtube'),
-    hashtags: fmtHashtags(val('hashtags')),
-    tone
+    title: val('title'), date_display: val('date'), date_iso: window.__lastIso || '', tz: window.__lastTz || '',
+    speaker: val('speaker'), speaker_x: val('speaker_x'), speaker_nostr: val('speaker_nostr'),
+    hook: val('hook'), luma_url: val('luma'), youtube_url: val('youtube'),
+    hashtags: fmtHashtags(val('hashtags')), venue: 'Denver Bitcoin meetup'
   };
 }
-function val(id){ return document.getElementById(id).value.trim(); }
-function setVal(id,v){ document.getElementById(id).value = v||''; }
 function applyEvent(ev){
-  setVal('luma_import_url', ev.luma_url);
-  setVal('title', ev.title);
-  setVal('date', ev.date_display);
-  setVal('speaker', ev.speaker);
-  setVal('speaker_x', ev.speaker_x);
-  setVal('speaker_nostr', ev.speaker_nostr);
-  setVal('hook', ev.description || ev.hook);
-  setVal('luma', ev.luma_url);
-  setVal('youtube', ev.youtube_url);
-  setVal('hashtags', (ev.hashtags||[]).join ? ev.hashtags.join(' ') : (ev.hashtags||''));
-  if(ev.tone){
-    const radio = document.querySelector(`input[name=tone][value="${ev.tone}"]`);
-    if(radio) radio.checked = true;
-  }
-  syncToneUI();
-  const merged = Object.assign({}, ev, readForm(), { date_iso: ev.date_iso, hashtags: fmtHashtags((ev.hashtags||[]).join? ev.hashtags.join(' ') : (ev.hashtags||'')) });
-  renderOutput(merged);
-  window.scrollTo({ top: document.getElementById('output').offsetTop - 20, behavior:'smooth' });
+  window.__lastIso = ev.date_iso || ''; window.__lastTz = ev.tz || '';
+  setVal('luma_import_url', ev.luma_url); setVal('title', ev.title); setVal('date', ev.date_display);
+  setVal('speaker', ev.speaker); setVal('speaker_x', ev.speaker_x); setVal('speaker_nostr', ev.speaker_nostr);
+  setVal('hook', ev.hook || ev.description); setVal('luma', ev.luma_url); setVal('youtube', ev.youtube_url || '');
+  setVal('hashtags', Array.isArray(ev.hashtags) ? ev.hashtags.join(' ') : (ev.hashtags || ''));
+  if(ev.style) document.querySelectorAll('#styleset [role=radio]').forEach(r => r.setAttribute('aria-checked', r.dataset.val===ev.style));
+  if(ev.tone) document.querySelectorAll('#toneset [role=radio]').forEach(r => r.setAttribute('aria-checked', r.dataset.val===ev.tone));
+  manualEdited = false;
+  renderOutput(readForm());
+  setGenerateLabel();
 }
-
-function syncToneUI(){
-  document.querySelectorAll('#toneset label').forEach(l=>{
-    const r = l.querySelector('input');
-    l.classList.toggle('on', r.checked);
-  });
+function setGenerateLabel(){ document.getElementById('btn-generate').textContent = document.getElementById('output').children.length ? 'Regenerate posts ↻' : 'Generate posts'; }
+function generate(){
+  const ev = readForm();
+  if(!ev.title){ alert('Add an event title first.'); return; }
+  if(manualEdited && document.getElementById('output').children.length){
+    if(!confirm('Regenerating will replace any drafts you have edited. Continue?')) return;
+  }
+  renderOutput(ev); manualEdited = false; setGenerateLabel();
 }
 
 /* ---------- Seeded events ---------- */
@@ -935,32 +906,27 @@ async function loadEvents(){
 }
 
 function init(){
+  renderSeg('styleset', STYLE_OPTS, 'conversational');
+  renderSeg('toneset', TONE_OPTS, 'educational');
   renderSeeds();
-  syncToneUI();
-
-  document.getElementById('toneset').addEventListener('change', syncToneUI);
-  document.addEventListener('click', e=>{
-    if(e.target.closest('#btn-import-luma')) importLumaUrl();
-    if(e.target.closest('#btn-toggle-luma-paste')) toggleLumaPaste();
-    if(e.target.closest('#btn-parse-luma-paste')) importLumaPaste();
-  });
-  document.getElementById('btn-generate').addEventListener('click', ()=>{
-    const ev = readForm();
-    if(!ev.title){ alert('Add an event title first.'); return; }
-    renderOutput(ev);
-    window.scrollTo({ top: document.getElementById('output').offsetTop - 20, behavior:'smooth' });
-  });
-  document.getElementById('btn-clear').addEventListener('click', ()=>{
-    ['luma_import_url','luma_paste','title','date','speaker','speaker_x','speaker_nostr','hook','luma','youtube','hashtags'].forEach(id=>setVal(id,''));
-    document.querySelector('input[name=tone][value=educational]').checked = true;
-    syncToneUI();
-    document.getElementById('luma-paste-wrap').hidden = true;
-    setImportStatus('The Luma event is the source of truth; the fields below are just for edits.', '');
-    document.getElementById('output').innerHTML = `<div class="panel empty"><h3>Paste a Luma event or click a seeded event</h3><div>You'll get 6 stages with short X, long X, and Nostr copy — ready to copy.</div></div>`;
-    document.getElementById('checklist-panel').hidden = true;
-  });
-  document.getElementById('rebuild-link').addEventListener('click', e=>{ e.preventDefault(); window.open('./BUILD_SPEC.md','_blank'); });
+  document.getElementById('btn-generate').addEventListener('click', generate);
+  document.getElementById('btn-import-luma').addEventListener('click', importLumaUrl);
+  document.getElementById('btn-toggle-luma-paste').addEventListener('click', toggleLumaPaste);
+  document.getElementById('btn-parse-luma-paste').addEventListener('click', importLumaPaste);
+  document.getElementById('btn-clear').addEventListener('click', clearForm);
+  const rebuild = document.getElementById('rebuild-link');
+  if(rebuild) rebuild.addEventListener('click', e => { e.preventDefault(); window.open('./BUILD_SPEC.md','_blank'); });
   loadEvents();
+}
+function clearForm(){
+  ['luma_import_url','luma_paste','title','date','speaker','speaker_x','speaker_nostr','hook','luma','youtube','hashtags'].forEach(id => setVal(id,''));
+  window.__lastIso = ''; window.__lastTz = ''; manualEdited = false;
+  renderSeg('styleset', STYLE_OPTS, 'conversational'); renderSeg('toneset', TONE_OPTS, 'educational');
+  document.getElementById('luma-paste-wrap').hidden = true;
+  setImportStatus('The Luma event is the source of truth; the fields below are just for edits.', '');
+  document.getElementById('output').innerHTML = '<div class="card" style="padding:40px;text-align:center;color:var(--muted)"><b style="color:var(--text)">Paste a Luma event or click a seeded event</b><div>You’ll get 6 stages with short X, long X, and Nostr copy.</div></div>';
+  document.getElementById('checklist-panel').hidden = true;
+  setGenerateLabel();
 }
 init();
 </script>
