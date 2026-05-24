@@ -8,44 +8,42 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0d10'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23f7931a'/%3E%3C/svg%3E" />
 <style>
   :root{
-    --bg:#0b0d10; --panel:#121519; --panel-2:#181c22; --border:#23282f;
-    --text:#e7e9ec; --muted:#8b95a1; --accent:#f7931a; --accent-2:#ffb347;
-    --ok:#22c55e; --warn:#ef4444; --x:#1d9bf0; --xlong:#67e8f9; --nostr:#9b59ff;
-    --radius:14px; --shadow:0 1px 0 rgba(255,255,255,.04), 0 24px 48px -24px rgba(0,0,0,.6);
-    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.5;-webkit-font-smoothing:antialiased}
-  a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
-  header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:24px}
-  .brand{display:flex;flex-direction:column;gap:6px}
-  .logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:.2px}
-  .logo .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(247,147,26,.18)}
-  .subtitle{color:var(--muted);font-size:13px}
-  .header-actions{display:flex;gap:8px;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--panel);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:10px;font:inherit;font-size:13px;cursor:pointer;transition:all .15s ease}
-  .btn:hover{border-color:var(--accent);color:var(--accent)}
-  .btn.primary{background:var(--accent);color:#0b0d10;border-color:var(--accent);font-weight:600}
-  .btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2);color:#0b0d10}
-  .btn.ghost{background:transparent}
-  .btn.small{padding:4px 8px;font-size:12px;border-radius:8px}
-
-  .grid{display:grid;grid-template-columns:380px 1fr;gap:20px}
-  @media (max-width:900px){.grid{grid-template-columns:1fr}}
-
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-  .panel h2{margin:0;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
-  .panel-body{padding:14px 16px}
-
-  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:10px 0 6px}
-  input[type=text], input[type=datetime-local], textarea, select{
-    width:100%;background:var(--panel-2);color:var(--text);border:1px solid var(--border);
-    border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;outline:none;transition:border-color .15s
-  }
-  input:focus, textarea:focus, select:focus{border-color:var(--accent)}
+  --navy-950:#0f1129; --navy-900:#161837;
+  --bg:#f8f9fc; --white:#fff; --field:#f0f1f5; --border:#e6e3dd;
+  --text:#13141f; --text-2:#5c6178; --muted:#9196a8;
+  --accent:#f7931a; --accent-deep:#e07f04; --on-accent:#0f1129;
+  --x:#1d9bf0; --xlong:#7c5cc4; --nostr:#9b59ff;
+  --ok:#30a46c; --error:#e5484d;
+  --radius:16px; --radius-pill:9999px;
+  --shadow:0 4px 16px rgba(0,0,0,.05);
+  --font:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-deep);text-decoration:none} a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 0 80px}
+.topbar{background:var(--navy-950);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.logo{display:inline-flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:18px}
+.logo .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(247,147,26,.22)}
+.topbar .sub{color:rgba(255,255,255,.7);font-size:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--white);color:var(--text);border:1px solid var(--border);padding:9px 16px;border-radius:var(--radius-pill);font:inherit;font-size:13px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:var(--accent-deep);border-color:var(--accent-deep)}
+.btn.ghost{background:transparent;border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85)}
+.btn.ghost:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.06)}
+.btn.small{padding:5px 12px;font-size:12px}
+.btn:focus-visible, input:focus-visible, textarea:focus-visible, [role=radio]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:20px;padding:20px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card + .card{margin-top:14px}
+.overline{font-size:12px;font-weight:600;color:var(--accent-deep);text-transform:uppercase;letter-spacing:.07em;padding:14px 16px 0}
+.card-body{padding:12px 16px 16px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
+input[type=text],textarea,select{width:100%;background:var(--field);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;outline:none}
+@media (max-width:900px){ input[type=text],textarea,select{font-size:16px} }
+input:focus,textarea:focus{border-color:var(--accent)}
   textarea{min-height:80px;resize:vertical;font-family:var(--mono);font-size:13px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
