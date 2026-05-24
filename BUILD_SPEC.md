@@ -352,11 +352,9 @@ A Settings panel (off by default) that accepts any **OpenAI-compatible endpoint*
 
 ## 10. Neutrality constraint
 
-No venue-specific branding anywhere in repo text or generated copy. Allowed neutral terms: "Event Poster," "Denver Bitcoin meetup," "Luma events," "X + Nostr campaigns." `sanitizeVenueText` enforces this on imported content. The repo must pass:
-```
-rg -n "The Space|SpaceDenver|TheSpace|denver\.space|Space member|Space Event|space-event-poster|\bSpace\b" README.md BUILD_SPEC.md events.json LICENSE index.html
-```
-→ expected: no matches.
+No venue-specific branding anywhere in repo text or generated copy. Allowed neutral terms: "Event Poster," "Denver Bitcoin meetup," "Luma events," "X + Nostr campaigns." `sanitizeVenueText` enforces this on imported content.
+
+To verify, run the venue-neutrality `rg` check defined in the design spec (`docs/superpowers/specs/2026-05-23-event-poster-v2-design.md` §10) against `README.md`, `BUILD_SPEC.md`, `events.json`, `LICENSE`, and `index.html`. Expected: no matches. The literal forbidden-term pattern is kept only in that design-spec file (which is outside the checked set), so this build spec stays clean of the very terms it forbids.
 
 ---
 
