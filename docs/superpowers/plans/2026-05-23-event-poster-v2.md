@@ -88,7 +88,7 @@ test('engine loads and exposes limits', () => {
 
 - [ ] **Step 4: Run the test, expect PASS.**
 
-Run: `node --test test/`
+Run: `node --test 'test/*.test.mjs'`
 Expected: 1 test passing. (If it fails with "markers not found," re-check Step 1.)
 
 - [ ] **Step 5: Commit.**
@@ -134,7 +134,7 @@ test('lumaSlug extracts the first path segment', () => {
 
 - [ ] **Step 2: Run, expect FAIL** (`engine.decodeEntities is not a function`).
 
-Run: `node --test test/`
+Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement inside the ENGINE block** in `index.html` (add below the limit constants, before `/* ENGINE-END */`):
 
@@ -170,7 +170,7 @@ Then **delete the old DOM-based `decodeHtml`** below the markers and replace eve
 
 - [ ] **Step 4: Update exports** in `test/load-engine.mjs` — add to `EXPORTS`: `'decodeEntities', 'normalizeLumaUrl', 'lumaSlug', 'fmtHashtags'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/` → all passing.
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'` → all passing.
 
 - [ ] **Step 6: Commit.**
 
@@ -220,7 +220,7 @@ test('timezoneConversions dedupes when event is already Eastern', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement in the ENGINE block.**
 
@@ -261,7 +261,7 @@ function timezoneConversions(iso, tz){
 
 - [ ] **Step 4: Update exports** — add `'formatEventTime', 'timezoneConversions'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`
 
   Note: `Intl` may emit a narrow no-break space (` `) before AM/PM. The test regex above tolerates both; if an assertion still fails on whitespace, normalize in the function with `.replace(/ /g, ' ')` and re-run.
 
@@ -302,7 +302,7 @@ test('stripLinks removes URLs from long-X body', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Move `trimTo` and `enforceXLimit` into the ENGINE block** (they already exist below the markers — relocate the existing definitions above `/* ENGINE-END */` and delete the originals). Then **add** `stripLinks`:
 
@@ -320,7 +320,7 @@ function stripLinks(text){
 
 - [ ] **Step 4: Update exports** — add `'enforceXLimit', 'stripLinks'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 6: Commit.**
 
@@ -357,13 +357,13 @@ test('sanitizeVenueText leaves clean text alone', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Relocate the existing `sanitizeVenueText` into the ENGINE block** (move the v1 definition above `/* ENGINE-END */`, delete the original). It already uses `String.fromCharCode` obfuscation; keep that intact.
 
 - [ ] **Step 4: Update exports** — add `'sanitizeVenueText'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 6: Commit.**
 
@@ -410,7 +410,7 @@ test('validateEvent requires a title and (date or description)', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement in the ENGINE block** (adapt v1's `findEventJsonLd` to be pure — it already only uses regex + `decodeEntities`; rename and move it in):
 
@@ -435,7 +435,7 @@ function validateEvent(ev){
 
 - [ ] **Step 4: Update exports** — add `'parseJsonLdEvent', 'validateEvent'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 6: Commit.**
 
@@ -490,7 +490,7 @@ test('lumaToEvent throws when no title found', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement in the ENGINE block.** Add `deepFindEvent`, keep the pure reader helpers from v1 (`cleanReaderLine`, `readerTitle`, `readerDate`, `readerDescription`, `stripLumaTitle`, `metaContent`, `extractSpeaker`, `docToText` — move them into the ENGINE block; they are already DOM-free except none use the DOM after Task 2's `decodeEntities` swap). Then rewrite `lumaToEvent` to set `tz` and use `formatEventTime`:
 
@@ -546,7 +546,7 @@ Delete the old `findEventJsonLd`, `findNextDataEvent`, and v1 `lumaToEvent` belo
 
 - [ ] **Step 4: Update exports** — add `'deepFindEvent', 'lumaToEvent'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 6: Commit.**
 
@@ -581,7 +581,7 @@ test('buildProxyAttempts includes 4 no-key proxies with correct Jina URL', () =>
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement `buildProxyAttempts` in the ENGINE block.**
 
@@ -624,7 +624,7 @@ async function fetchLumaHtml(url){
 
 - [ ] **Step 5: Update exports** — add `'buildProxyAttempts'`.
 
-- [ ] **Step 6: Run, expect PASS.** Run: `node --test test/` (network race itself is verified in Phase E).
+- [ ] **Step 6: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'` (network race itself is verified in Phase E).
 
 - [ ] **Step 7: Commit.**
 
@@ -660,7 +660,7 @@ test('STYLES are structured + conversational', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement in the ENGINE block** (delete v1's `TONES` below the markers):
 
@@ -692,7 +692,7 @@ const STYLES = { structured:{ id:'structured' }, conversational:{ id:'conversati
 
 - [ ] **Step 4: Update exports** — add `'TONES', 'STYLES'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 6: Commit.**
 
@@ -773,7 +773,7 @@ test('youtube recap: X says link in reply, nostr embeds url', () => {
 });
 ```
 
-- [ ] **Step 2: Run, expect FAIL.** Run: `node --test test/`
+- [ ] **Step 2: Run, expect FAIL.** Run: `node --test 'test/*.test.mjs'`
 
 - [ ] **Step 3: Implement the engine.** Add to the ENGINE block. `pickWith` is deterministic given a seed so behavior is testable; `compose` defaults the seed to a rotating value in the DOM layer.
 
@@ -882,7 +882,7 @@ function compose(ev, style, tone, seedBase){
 
 - [ ] **Step 4: Update exports** — add `'STAGES', 'compose', 'buildStage'`.
 
-- [ ] **Step 5: Run, expect PASS.** Run: `node --test test/`. If a short-X case exceeds 280 for the `punchy` tone, confirm `enforceXLimit` is applied in `compose` (it is) and that the offending template line is protected correctly; tighten the template text, not the test.
+- [ ] **Step 5: Run, expect PASS.** Run: `node --test 'test/*.test.mjs'`. If a short-X case exceeds 280 for the `punchy` tone, confirm `enforceXLimit` is applied in `compose` (it is) and that the offending template line is protected correctly; tighten the template text, not the test.
 
 - [ ] **Step 6: Commit.**
 
@@ -1332,7 +1332,7 @@ git commit -m "a11y: mobile single-column, 44px targets, focus rings, aria roles
 
 - [ ] **Step 2: Update `README.md`** — reflect Style × Tone, the visible Title, timezone behavior, and 3-step GitHub Pages deploy. Neutrality-clean.
 
-- [ ] **Step 3: Run the full unit suite.** Run: `node --test test/` → all green.
+- [ ] **Step 3: Run the full unit suite.** Run: `node --test 'test/*.test.mjs'` → all green.
 
 - [ ] **Step 4: Neutrality grep — expect no matches.**
 
