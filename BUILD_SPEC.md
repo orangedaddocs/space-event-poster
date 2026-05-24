@@ -297,6 +297,8 @@ When rebuilding, the agent must verify all of these by running through them in a
 ### Optional provider-agnostic AI panel (next candidate)
 A Settings panel (off by default) that accepts any **OpenAI-compatible endpoint** — a local Ollama (`localhost`, nothing leaves the machine), OpenRouter, or other privacy provider — with the key stored in `localStorage` only. When configured, Generate/Regenerate calls it for bespoke copy; otherwise templates. One request → all 18 drafts as JSON; output still passes the 280/link-light guards. Provider-agnostic (not locked to any vendor).
 
+**Full wiring guide: see [`AI_INTEGRATION.md`](AI_INTEGRATION.md)** — integration point, settings panel, the OpenAI-compatible request, the system prompt, the template fallback, and a ready-to-hand prompt for Claude Code / Codex.
+
 ### v1.1 — Image flyer generator
 - Add an "Export flyer" button per stage.
 - Use HTML5 `<canvas>` to render a 1080×1350 image with title, date, speaker, venue.

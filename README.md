@@ -112,6 +112,10 @@ In `index.html`, change the `:root` CSS variables:
 
 Open `index.html`, find `const TONES = {...}` in the `<script>` block, and edit the openers / ctas / signoffs phrases for each tone. Add phrases to any array; the engine rotates through them via a seed so successive generations differ.
 
+### 5. (Optional) Have an AI write the posts instead of templates
+
+The default engine fills templates — fast, free, fully local, but the wording follows fixed patterns. To wire up a real LLM for genuinely custom copy (bring-your-own-key, works with a local Ollama or OpenRouter — never locked to one vendor, templates stay the fallback), follow **[`AI_INTEGRATION.md`](AI_INTEGRATION.md)**.
+
 ---
 
 ## Why this exists
