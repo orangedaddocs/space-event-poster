@@ -52,3 +52,23 @@ test('timezoneConversions dedupes when event is already Eastern', () => {
   assert.match(conv, /9:00 PM EDT/);
   assert.match(conv, /6:00 PM PDT/);
 });
+
+test('enforceXLimit keeps short posts unchanged', () => {
+  const s = 'Short and sweet';
+  assert.equal(engine.enforceXLimit(s), s);
+});
+
+test('enforceXLimit trims to <= 280 and protects URL/hashtag lines', () => {
+  const long = 'A'.repeat(300) + '\nRSVP: https://luma.com/x\n#Bitcoin';
+  const out = engine.enforceXLimit(long);
+  assert.ok(out.length <= 280, `len=${out.length}`);
+  assert.match(out, /https:\/\/luma\.com\/x/);
+  assert.match(out, /#Bitcoin/);
+});
+
+test('stripLinks removes URLs from long-X body', () => {
+  const body = 'Come hear it.\nRSVP: https://luma.com/x\nSee you';
+  const out = engine.stripLinks(body);
+  assert.doesNotMatch(out, /https?:\/\//);
+  assert.doesNotMatch(out, /luma\.com/);
+});

@@ -13,7 +13,8 @@ if (!m) throw new Error('ENGINE-START/ENGINE-END markers not found in index.html
 const EXPORTS = [
   'X_LIMIT', 'X_LONG_SOFT_LIMIT', 'NOSTR_SOFT_LIMIT',
   'decodeEntities', 'normalizeLumaUrl', 'lumaSlug', 'fmtHashtags',
-  'formatEventTime', 'timezoneConversions'
+  'formatEventTime', 'timezoneConversions',
+  'enforceXLimit', 'stripLinks'
 ];
 
 const code = m[1] + `\n;globalThis.__engine = { ${EXPORTS.join(', ')} };`;

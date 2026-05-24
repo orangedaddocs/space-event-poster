@@ -304,6 +304,48 @@ function timezoneConversions(iso, tz){
   }
   return out.join(' · ');
 }
+function trimTo(s, limit){
+  if(!s || s.length<=limit) return s || '';
+  return s.slice(0, Math.max(0, limit-1)).replace(/\s+\S*$/, '').trimEnd() + '…';
+}
+function enforceXLimit(text){
+  let clean = text.trim().replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+  if(clean.length<=X_LIMIT) return clean;
+
+  let lines = clean.split('\n');
+  const protectedLine = line => /^https?:\/\//.test(line) || /^RSVP:/.test(line) || line.includes('luma.com') || line.startsWith('#') || /^📅/.test(line);
+
+  while(lines.join('\n').length>X_LIMIT){
+    let idx = -1;
+    let max = 0;
+    lines.forEach((line, i)=>{
+      if(!protectedLine(line) && line.length>max){
+        idx = i;
+        max = line.length;
+      }
+    });
+    if(idx<0 || max<18) break;
+    const over = lines.join('\n').length - X_LIMIT;
+    lines[idx] = trimTo(lines[idx], Math.max(18, lines[idx].length-over-2));
+  }
+
+  clean = lines.join('\n').trim();
+  if(clean.length<=X_LIMIT) return clean;
+
+  clean = lines.filter(line=>line.trim()).join('\n').trim();
+  if(clean.length<=X_LIMIT) return clean;
+
+  return trimTo(clean, X_LIMIT);
+}
+function stripLinks(text){
+  return (text || '')
+    .split('\n')
+    .map(line => line.replace(/https?:\/\/\S+/g, '').replace(/\b[\w.-]+\.(?:com|org|net|io|co)\/\S*/gi, ''))
+    .map(line => line.replace(/\bRSVP:\s*$/i, '').replace(/[ \t]+$/,''))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 /* ENGINE-END */
 
 const FALLBACK_DATA = {
@@ -663,39 +705,6 @@ function toggleLumaPaste(){
   const wrap = document.getElementById('luma-paste-wrap');
   wrap.hidden = !wrap.hidden;
   setImportStatus(wrap.hidden ? 'The Luma event is the source of truth; the fields below are just for edits.' : 'Paste copied Luma event text or page source, then click Use pasted Luma content.', '');
-}
-function trimTo(s, limit){
-  if(!s || s.length<=limit) return s || '';
-  return s.slice(0, Math.max(0, limit-1)).replace(/\s+\S*$/, '').trimEnd() + '…';
-}
-function enforceXLimit(text){
-  let clean = text.trim().replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
-  if(clean.length<=X_LIMIT) return clean;
-
-  let lines = clean.split('\n');
-  const protectedLine = line => /^https?:\/\//.test(line) || /^RSVP:/.test(line) || line.includes('luma.com') || line.startsWith('#') || /^📅/.test(line);
-
-  while(lines.join('\n').length>X_LIMIT){
-    let idx = -1;
-    let max = 0;
-    lines.forEach((line, i)=>{
-      if(!protectedLine(line) && line.length>max){
-        idx = i;
-        max = line.length;
-      }
-    });
-    if(idx<0 || max<18) break;
-    const over = lines.join('\n').length - X_LIMIT;
-    lines[idx] = trimTo(lines[idx], Math.max(18, lines[idx].length-over-2));
-  }
-
-  clean = lines.join('\n').trim();
-  if(clean.length<=X_LIMIT) return clean;
-
-  clean = lines.filter(line=>line.trim()).join('\n').trim();
-  if(clean.length<=X_LIMIT) return clean;
-
-  return trimTo(clean, X_LIMIT);
 }
 function cleanupPost(text){
   return (text || '').trim().replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
