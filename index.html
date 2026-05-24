@@ -549,6 +549,9 @@ function buildStage(stage, ev, style, tone, seed){
   const cta = pickWith(T.ctas, seed + 1);
   const signoff = pickWith(T.signoffs, seed + 2);
   const tag = speakerTag(ev);
+  const xhandle = ev.speaker_x ? (ev.speaker_x.startsWith('@') ? ev.speaker_x : '@' + ev.speaker_x) : '';
+  const xName = ev.speaker ? (xhandle ? `${ev.speaker} (${xhandle})` : ev.speaker) : xhandle;  // "Name (@handle)" for X
+  const npubLine = ev.speaker_nostr ? `nostr:${ev.speaker_nostr}` : '';                          // tags speaker on Nostr
   const venue = venueLabel(ev);
   const tags = ev.hashtags || '';
   const rsvp = ev.luma_url || '';
@@ -568,19 +571,19 @@ function buildStage(stage, ev, style, tone, seed){
       return {
         x: conv
           ? para(firstSentence(hook) || `${opener} ${ev.title}`,
-                 tight(ev.speaker && `${ev.speaker} is showing us.`, date && `📅 ${date}`),
+                 tight(xName && `${xName} is showing us.`, date && `📅 ${date}`),
                  (rsvp ? `${cta} ${rsvp}` : cta), tags)
           : para(`New event: ${ev.title}`,
-                 tight(date && `📅 ${date}`, `📍 ${venue}`, tag && `🎤 ${tag}`),
+                 tight(date && `📅 ${date}`, `📍 ${venue}`, xName && `🎤 ${xName}`),
                  (rsvp ? `${cta} ${rsvp}` : cta), tags),
         xlong: stripLinks(para(ev.title,
           hook || 'A new one is on the calendar.',
-          tight(ev.speaker && `With ${ev.speaker}${ev.speaker_org ? ` (${ev.speaker_org})` : ''}.`, date && `📅 ${date}`, `📍 ${venue}`),
+          tight(ev.speaker && `With ${ev.speaker}${xhandle ? ` ${xhandle}` : ''}${ev.speaker_org ? ` (${ev.speaker_org})` : ''}.`, date && `📅 ${date}`, `📍 ${venue}`),
           signoff,
           tight("RSVP’s in the reply 👇", yt && 'Stream link in the reply too.'),
           tags)),
         nostr: para(ev.title,
-          tight(date && `📅 ${date}`, `📍 ${venue}`, ev.speaker && `🎤 ${ev.speaker}`, ev.speaker_nostr && `nostr:${ev.speaker_nostr}`),
+          tight(date && `📅 ${date}`, `📍 ${venue}`, ev.speaker && `🎤 ${ev.speaker}`, npubLine),
           hook,
           tight(cta, rsvp),
           tags)
@@ -599,30 +602,30 @@ function buildStage(stage, ev, style, tone, seed){
     }
     case 'rem1':
       return {
-        x: conv ? para(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}.`, date, (rsvp ? `Last call to RSVP → ${rsvp}` : cta), tags)
-                : para(`Tomorrow — ${ev.title}`, tight(date, `📍 ${venue}`, tag), rsvp, tags),
+        x: conv ? para(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${xName}` : ''}.`, date, (rsvp ? `Last call to RSVP → ${rsvp}` : cta), tags)
+                : para(`Tomorrow — ${ev.title}`, tight(date, `📍 ${venue}`, xName), rsvp, tags),
         xlong: stripLinks(para(`Tomorrow: ${ev.title}`,
-          tight(date, venue, ev.speaker && `With ${ev.speaker}.`),
+          tight(date, venue, ev.speaker && `With ${ev.speaker}${xhandle ? ` ${xhandle}` : ''}.`),
           hook || 'One more nudge before this happens.',
           'RSVP if you’re coming and bring someone curious.', "Link’s in the reply 👇", tags)),
-        nostr: para(`Tomorrow: ${ev.title}`, tight(ev.speaker && `With ${ev.speaker}`, date, `📍 ${venue}`), (rsvp && tight('Last chance to RSVP:', rsvp)), tags)
+        nostr: para(`Tomorrow: ${ev.title}`, tight(ev.speaker && `With ${ev.speaker}`, npubLine, date, `📍 ${venue}`), (rsvp && tight('Last chance to RSVP:', rsvp)), tags)
       };
     case 'live':
       return {
-        x: conv ? para(`We’re live 🔴 ${ev.title}`, conversions, `📍 ${venue}${yt ? ' — or catch the stream.' : ''}`, tags)
-                : para(`LIVE — ${ev.title}`, `🔴 ${conversions}`, `📍 ${venue}`, tags),
+        x: conv ? para(`We’re live 🔴 ${ev.title}${xhandle ? ` with ${xhandle}` : ''}`, conversions, `📍 ${venue}${yt ? ' — or catch the stream.' : ''}`, tags)
+                : para(`LIVE — ${ev.title}`, `🔴 ${conversions}`, `📍 ${venue}`, xName && `🎤 ${xName}`, tags),
         xlong: stripLinks(para(`We’re live: ${ev.title}`, conversions, firstSentence(hook),
           yt ? 'Streaming now — link in the reply.' : 'If you’re nearby, now’s the time to come through.', venue, tags)),
-        nostr: para(`Live now 🔴 ${ev.title}`, conversions, hook, tight(`📍 ${venue}`, yt && `Stream: ${yt}`), tags)
+        nostr: para(`Live now 🔴 ${ev.title}`, conversions, hook, tight(`📍 ${venue}`, npubLine, yt && `Stream: ${yt}`), tags)
       };
     case 'followup':
       return {
         x: conv ? para(`${ev.title} — what a night.`, 'The thing that stuck with me: [the one thing worth taking away]', 'Recording soon 👇', tags)
-                : para(`Recap: ${ev.title}${tag ? ` · ${tag}` : ''}`, 'Big takeaway: [the one thing worth taking away]', 'Recording soon.', tags),
+                : para(`Recap: ${ev.title}${xhandle ? ` · ${xhandle}` : ''}`, 'Big takeaway: [the one thing worth taking away]', 'Recording soon.', tags),
         xlong: stripLinks(para(`${ev.title} — thanks to everyone who came out.`,
           'The one thing worth carrying forward: [the one thing worth taking away]',
           'Good questions, good people, good night.', 'Recording goes in the reply when it’s ready.', tags)),
-        nostr: para(`Recap: ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}`,
+        nostr: para(`Recap: ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}`, npubLine,
           'The thing worth carrying home: [the one thing worth taking away]', 'Recording soon. Next time, bring a friend.', tags)
       };
     case 'recap':

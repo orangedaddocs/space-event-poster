@@ -244,6 +244,18 @@ test('youtube recap: X says link in reply, nostr embeds url', () => {
   assert.match(recap.nostr, /youtube\.com\/watch\?v=abc/);
 });
 
+test('speaker X handle tags on X posts and npub tags on Nostr, in both styles', () => {
+  const ev = { ...EV, speaker_x:'@noah', speaker_nostr:'npub1abc' };
+  for(const style of ['conversational', 'structured']){
+    const posts = engine.compose(ev, style, 'educational');
+    const announce = posts.find(p => p.stage === 'Announcement');
+    assert.match(announce.x, /@noah/, `X handle missing on ${style} announcement X`);
+    assert.match(announce.nostr, /nostr:npub1abc/, `npub missing on ${style} announcement Nostr`);
+    const rem1 = posts.find(p => p.stage === '24-hr reminder');
+    assert.match(rem1.x, /@noah/, `X handle missing on ${style} 24-hr X`);
+  }
+});
+
 test('buildStage returns empty strings for an unknown stage id', () => {
   const out = engine.buildStage({ id:'nope', label:'X', when:'' }, EV, 'conversational', 'educational', 0);
   assert.equal(out.x, '');
