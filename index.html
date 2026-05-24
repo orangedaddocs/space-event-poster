@@ -346,6 +346,15 @@ function stripLinks(text){
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+function sanitizeVenueText(s){
+  const oldVenue = String.fromCharCode(84,104,101,32,83,112,97,99,101);
+  const oldMember = String.fromCharCode(83,112,97,99,101,32,109,101,109,98,101,114);
+  const oldTag = String.fromCharCode(35,84,104,101,83,112,97,99,101);
+  return (s || '')
+    .replace(new RegExp(`\\b${oldVenue}\\b`, 'g'), 'the venue')
+    .replace(new RegExp(`\\b${oldMember}\\b`, 'gi'), 'community member')
+    .replace(new RegExp(`${oldTag}\\b`, 'g'), '#Bitcoin');
+}
 /* ENGINE-END */
 
 const FALLBACK_DATA = {
@@ -461,15 +470,6 @@ function openXCompose(text){
 }
 function venueLabel(){
   return [VENUE.name, VENUE.city].filter(Boolean).join(' · ');
-}
-function sanitizeVenueText(s){
-  const oldVenue = String.fromCharCode(84,104,101,32,83,112,97,99,101);
-  const oldMember = String.fromCharCode(83,112,97,99,101,32,109,101,109,98,101,114);
-  const oldTag = String.fromCharCode(35,84,104,101,83,112,97,99,101);
-  return (s || '')
-    .replace(new RegExp(`\\b${oldVenue}\\b`, 'g'), 'the venue')
-    .replace(new RegExp(`\\b${oldMember}\\b`, 'gi'), 'community member')
-    .replace(new RegExp(`${oldTag}\\b`, 'g'), '#Bitcoin');
 }
 function findSeedByLumaUrl(url){
   const slug = lumaSlug(url);

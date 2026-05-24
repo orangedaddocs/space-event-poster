@@ -72,3 +72,19 @@ test('stripLinks removes URLs from long-X body', () => {
   assert.doesNotMatch(out, /https?:\/\//);
   assert.doesNotMatch(out, /luma\.com/);
 });
+
+test('sanitizeVenueText scrubs forbidden venue references', () => {
+  const dirty = 'Hosted at The Space tonight. A Space member spoke. #TheSpace';
+  const clean = engine.sanitizeVenueText(dirty);
+  assert.doesNotMatch(clean, /The Space/);
+  assert.doesNotMatch(clean, /Space member/i);
+  assert.doesNotMatch(clean, /#TheSpace/);
+  assert.match(clean, /the venue/);
+  assert.match(clean, /community member/i);
+  assert.match(clean, /#Bitcoin/);
+});
+
+test('sanitizeVenueText leaves clean text alone', () => {
+  const s = 'Denver Bitcoin meetup at 6:30 PM';
+  assert.equal(engine.sanitizeVenueText(s), s);
+});

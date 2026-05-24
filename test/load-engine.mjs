@@ -14,7 +14,7 @@ const EXPORTS = [
   'X_LIMIT', 'X_LONG_SOFT_LIMIT', 'NOSTR_SOFT_LIMIT',
   'decodeEntities', 'normalizeLumaUrl', 'lumaSlug', 'fmtHashtags',
   'formatEventTime', 'timezoneConversions',
-  'enforceXLimit', 'stripLinks'
+  'enforceXLimit', 'stripLinks', 'sanitizeVenueText'
 ];
 
 const code = m[1] + `\n;globalThis.__engine = { ${EXPORTS.join(', ')} };`;
