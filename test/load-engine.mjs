@@ -17,7 +17,8 @@ const EXPORTS = [
   'enforceXLimit', 'stripLinks', 'sanitizeVenueText',
   'parseJsonLdEvent', 'validateEvent',
   'deepFindEvent', 'lumaToEvent',
-  'buildProxyAttempts'
+  'buildProxyAttempts',
+  'TONES', 'STYLES'
 ];
 
 const code = m[1] + `\n;globalThis.__engine = { ${EXPORTS.join(', ')} };`;

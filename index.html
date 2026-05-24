@@ -514,6 +514,29 @@ function buildProxyAttempts(url){
     { name:'jina',       kind:'raw',  url:`https://r.jina.ai/${url}` }
   ];
 }
+const TONES = {
+  educational: {
+    openers: ['Ever wonder', 'Here’s a good one:', 'Worth knowing about:', 'New on the calendar — and worth your time:'],
+    ctas: ['Free to RSVP →', 'Save your seat →', 'Details + RSVP →', 'Sign up to attend →'],
+    signoffs: ['Bring your questions.', 'Come curious.']
+  },
+  welcoming: {
+    openers: ['You’re invited 👋', 'Come hang with us:', 'New to Bitcoin? Start here:', 'All welcome —'],
+    ctas: ['First time? Just show up →', 'RSVP and say hi →', 'Bring a friend →'],
+    signoffs: ['Newcomers genuinely welcome.', 'No experience needed — just curiosity.']
+  },
+  cypherpunk: {
+    openers: ['Signal:', 'For the orange-pilled:', 'Sound money, in person:', 'Tune out the noise —'],
+    ctas: ['RSVP. No KYC.', 'Show up. Stay sovereign.', 'Lock it in →'],
+    signoffs: ['Be there.', 'Bring cash, bring questions.']
+  },
+  punchy: {
+    openers: ['Mark it. 📅', 'This one’s big.', 'Don’t sleep on this:', 'Lock it in.'],
+    ctas: ['RSVP now →', 'Grab a spot →', 'Go. →'],
+    signoffs: ['See you there.', 'Pull up.']
+  }
+};
+const STYLES = { structured:{ id:'structured' }, conversational:{ id:'conversational' } };
 /* ENGINE-END */
 
 const FALLBACK_DATA = {
@@ -572,41 +595,6 @@ const FALLBACK_DATA = {
 let VENUE = FALLBACK_DATA.venue;
 let EVENTS = FALLBACK_DATA.events.slice();
 
-/* ---------- Tone presets ---------- */
-const TONES = {
-  punchy: {
-    intro:    ["Mark your calendar.", "Lock it in.", "This one's huge.", "Don't sleep on this."],
-    cta:      ["RSVP now →", "Grab a spot →", "Get on the list →", "We'll see you there →"],
-    reminder: ["{days} days.", "{days} days out.", "We're close.", "Almost time."],
-    day:      ["Tomorrow.", "24 hours.", "1 sleep.", "It's happening tomorrow."],
-    live:     ["LIVE NOW.", "Doors open. Pull up.", "It's go time.", "Started. Come through."],
-    followup: ["What a night.", "That was 🔥.", "Recap drop.", "If you missed it —"],
-  },
-  educational: {
-    intro:    ["New event:", "Up next:", "Join us for:", "Coming up:"],
-    cta:      ["Free RSVP →", "Save your seat →", "More details + RSVP →", "Sign up to attend →"],
-    reminder: ["{days} days until {title_short}.", "Reminder: {title_short} in {days} days.", "Coming up in {days} days:"],
-    day:      ["Tomorrow:", "24 hours out:", "We're 1 day away:"],
-    live:     ["Happening now:", "Live now:", "We're live with"],
-    followup: ["Thanks to everyone who came out for", "Recap:", "Here's what we covered:"],
-  },
-  cypherpunk: {
-    intro:    ["Signal:", "Sovereignty drop:", "From the underground:", "For the orange-pilled:"],
-    cta:      ["RSVP. No KYC.", "Show up. Stay sovereign.", "Lock in →", "Reserve your seat. Cash welcome."],
-    reminder: ["{days} blocks-ish until we meet.", "T-minus {days} days.", "{days} days. Be there."],
-    day:      ["Tomorrow. Be there.", "24h. No excuses.", "1 sleep until signal."],
-    live:     ["We're live. No retreat.", "LIVE now.", "On-chain in spirit. Live in person."],
-    followup: ["That's a wrap.", "If you weren't there — fix that next time.", "Notes from the front lines:"],
-  },
-  welcoming: {
-    intro:    ["You're invited:", "Come hang with us:", "All welcome:", "New to Bitcoin? Start here:"],
-    cta:      ["Free + open to everyone →", "First time? Just show up →", "RSVP and say hi →", "Bring a friend →"],
-    reminder: ["Just {days} days until we hang out again.", "{days} days out. Hope to see you.", "Counting down — {days} days."],
-    day:      ["See you tomorrow.", "We're 1 day out — looking forward to it.", "Tomorrow we hang."],
-    live:     ["We're live. Door's open — come on in.", "Started, but pull up anytime.", "Hanging out now."],
-    followup: ["Thanks for hanging with us.", "What a fun crowd.", "Loved having everyone."],
-  }
-};
 
 /* ---------- Helpers ---------- */
 function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }

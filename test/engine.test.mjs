@@ -170,3 +170,16 @@ test('buildProxyAttempts includes 4 no-key proxies with correct Jina URL', () =>
   assert.equal(jina, 'https://r.jina.ai/https://luma.com/mrxb609z');
   assert.doesNotMatch(jina, /r\.jina\.ai\/http:\/\/r\.jina\.ai/);
 });
+
+test('TONES has the four reworked tones, each with opener+cta+signoff arrays', () => {
+  for(const t of ['educational', 'welcoming', 'cypherpunk', 'punchy']){
+    assert.ok(engine.TONES[t], `missing tone ${t}`);
+    assert.ok(Array.isArray(engine.TONES[t].openers) && engine.TONES[t].openers.length >= 3);
+    assert.ok(Array.isArray(engine.TONES[t].ctas) && engine.TONES[t].ctas.length >= 2);
+    assert.ok(Array.isArray(engine.TONES[t].signoffs));
+  }
+});
+
+test('STYLES are structured + conversational', () => {
+  assert.deepEqual(Object.keys(engine.STYLES).sort(), ['conversational', 'structured']);
+});
