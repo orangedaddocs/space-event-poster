@@ -109,6 +109,7 @@ async function aiGenerate(ev, style, tone){
 Notes:
 - **Ollama**: run `ollama serve`, set base `http://localhost:11434/v1`, key blank, model e.g. `llama3.1`. Ollama speaks the OpenAI API. Fully local.
 - **OpenRouter / Groq / Together / LM Studio**: set their base URL + key + a model id. All OpenAI-compatible.
+- **Privacy-respecting hosted inference**: if you'd rather not run your own hardware, prefer a provider that does *confidential computing* — e.g. **Maple AI**, which runs inference inside secure enclaves so even the provider can't read your prompts. Where it exposes an OpenAI-compatible endpoint, it's a drop-in: set the base URL + key like any other. This keeps the privacy posture without self-hosting.
 - **Anthropic direct** is possible but is *not* OpenAI-shaped — it needs `POST https://api.anthropic.com/v1/messages`, headers `x-api-key`, `anthropic-version`, and `anthropic-dangerous-direct-browser-access: true` (to bypass CORS from a browser). Prefer routing Claude through OpenRouter to keep one code path.
 
 ---
