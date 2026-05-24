@@ -169,17 +169,13 @@ input:focus,textarea:focus{border-color:var(--accent)}
     </div>
   </div>
 
-  <div class="card">
-    <div class="overline">Or load a seeded event</div>
-    <div class="card-body" id="seed" style="display:flex;flex-direction:column;gap:8px"></div>
-  </div>
   </section>
 
   <!-- RIGHT: output -->
   <section>
     <div id="output">
       <div class="card empty">
-        <h3>Paste a Luma event or click a seeded event</h3>
+        <h3>Paste a Luma event URL to start</h3>
         <div>You'll get 6 stages with short X, long X, and Nostr copy — ready to copy.</div>
       </div>
     </div>
@@ -653,68 +649,8 @@ function compose(ev, style, tone, seedBase){
 }
 /* ENGINE-END */
 
-const FALLBACK_DATA = {
-  venue: { name:'Denver Bitcoin meetup', city:'Denver', default_hashtags:['#Bitcoin', '#Denver', '#Nostr'] },
-  events: [
-    {
-      id:'bitcoin-in-healthcare-2026-05-28',
-      title:'Bitcoin in Healthcare w/ Dr. Noah Kaufman',
-      date_iso:'2026-05-28T18:30:00-06:00',
-      tz:'America/Denver',
-      date_display:'Thu, May 28 · 6:30 PM MDT',
-      host:'Denver Bitcoin meetup',
-      speaker:'Dr. Noah Kaufman',
-      speaker_org:'KaufCare Advanced Urgent Care',
-      speaker_x:'',
-      speaker_nostr:'',
-      description:'How do you build a modern medical practice on a Bitcoin standard? An evening with a Denver physician and Bitcoiner on integrating Bitcoin into corporate operations, decentralized healthcare, and sovereign money. Drinks + networking.',
-      topic_tags:['healthcare', 'sovereignty', 'operations'],
-      hashtags:['#Bitcoin', '#BitcoinStandard', '#Healthcare'],
-      luma_url:'https://luma.com/pks2tmn1',
-      tone:'educational'
-    },
-    {
-      id:'denver-bitdevs-2026-06-04',
-      title:'Denver BitDevs w/ Rob Warren',
-      date_iso:'2026-06-04T17:00:00-06:00',
-      tz:'America/Denver',
-      date_display:'Thu, Jun 4 · 5:00 PM MDT',
-      host:'Denver Bitcoin meetup',
-      speaker:'Rob Warren',
-      speaker_org:'Bitcoin Park',
-      speaker_x:'@robertwarren',
-      speaker_nostr:'',
-      description:'Rob Warren (Head of Research & Education) on practical energy strategies for Bitcoin. Members social hour at 5pm, main event 6-8pm. Pizza provided. Expert-level.',
-      topic_tags:['mining', 'energy', 'research'],
-      hashtags:['#Bitcoin', '#BitDevs', '#Mining'],
-      luma_url:'https://luma.com/yj1xgw3q',
-      tone:'cypherpunk'
-    },
-    {
-      id:'bitcoin-beer-art-auction-2026-06-12',
-      title:'Bitcoin, Beer & Live Art Auction',
-      date_iso:'2026-06-12T15:30:00-06:00',
-      tz:'America/Denver',
-      date_display:'Fri, Jun 12 · 3:30 PM MDT',
-      host:'Denver Bitcoin meetup',
-      speaker:'',
-      speaker_org:'',
-      speaker_x:'',
-      speaker_nostr:'',
-      description:'Bitcoin + beer social tuned into a live art auction on Scarce.city. Hang out, drink, and bid on Bitcoin art.',
-      topic_tags:['social', 'art', 'community'],
-      hashtags:['#Bitcoin', '#BitcoinArt', '#ScarceCity'],
-      luma_url:'https://luma.com/b1n1icdn',
-      tone:'welcoming'
-    }
-  ]
-};
-let VENUE = FALLBACK_DATA.venue;
-let EVENTS = FALLBACK_DATA.events.slice();
-
 
 /* ---------- Helpers ---------- */
-function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
 function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg || 'Copied'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1400); }
 function copyText(text){
   if(navigator.clipboard && window.isSecureContext){
@@ -730,11 +666,6 @@ function fallbackCopy(text){
 }
 function postText(id){ const n = document.getElementById(id); return 'value' in n ? n.value : n.innerText; }
 function openXCompose(text){ window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener'); }
-function findSeedByLumaUrl(url){
-  const slug = lumaSlug(url);
-  if(!slug) return null;
-  return EVENTS.find(ev => lumaSlug(ev.luma_url) === slug) || null;
-}
 function setImportStatus(msg, type){
   const box = document.getElementById('import-status');
   box.textContent = msg;
@@ -769,13 +700,6 @@ async function importLumaUrl(){
   const url = normalizeLumaUrl(val('luma_import_url') || val('luma'));
   if(!url){ setImportStatus('Paste a Luma event URL first.', 'warn'); return; }
   setVal('luma_import_url', url);
-
-  const seeded = findSeedByLumaUrl(url);
-  if(seeded){
-    applyEvent(seeded);
-    setImportStatus('Loaded this Luma event from the included examples and generated the campaign.', 'ok');
-    return;
-  }
 
   setImportStatus('Importing event details from Luma...', '');
   try{
@@ -902,34 +826,10 @@ function generate(){
   renderOutput(ev); manualEdited = false; setGenerateLabel();
 }
 
-/* ---------- Seeded events ---------- */
-function renderSeeds(){
-  const wrap = document.getElementById('seed');
-  wrap.innerHTML = '';
-  EVENTS.forEach(ev=>{
-    const b = el(`<button class="btn"><b>${escapeHtml(ev.title)}</b><span>${escapeHtml(ev.date_display||'')}</span></button>`);
-    b.addEventListener('click', ()=> applyEvent(ev));
-    wrap.appendChild(b);
-  });
-}
-
 /* ---------- Init ---------- */
-async function loadEvents(){
-  try{
-    const res = await fetch('events.json', {cache:'no-store'});
-    if(res.ok){
-      const data = await res.json();
-      VENUE = data.venue || VENUE;
-      EVENTS = data.events || [];
-      renderSeeds();
-    }
-  }catch(e){ console.warn('events.json not loaded (running offline):', e); }
-}
-
 function init(){
   renderSeg('styleset', STYLE_OPTS, 'conversational');
   renderSeg('toneset', TONE_OPTS, 'educational');
-  renderSeeds();
   document.getElementById('btn-generate').addEventListener('click', generate);
   document.getElementById('btn-import-luma').addEventListener('click', importLumaUrl);
   document.getElementById('btn-toggle-luma-paste').addEventListener('click', toggleLumaPaste);
@@ -937,7 +837,6 @@ function init(){
   document.getElementById('btn-clear').addEventListener('click', clearForm);
   const rebuild = document.getElementById('rebuild-link');
   if(rebuild) rebuild.addEventListener('click', e => { e.preventDefault(); window.open('./BUILD_SPEC.md','_blank'); });
-  loadEvents();
 }
 function clearForm(){
   ['luma_import_url','luma_paste','title','date','speaker','speaker_x','speaker_nostr','hook','luma','youtube','hashtags'].forEach(id => setVal(id,''));
@@ -945,7 +844,7 @@ function clearForm(){
   renderSeg('styleset', STYLE_OPTS, 'conversational'); renderSeg('toneset', TONE_OPTS, 'educational');
   document.getElementById('luma-paste-wrap').hidden = true;
   setImportStatus('The Luma event is the source of truth; the fields below are just for edits.', '');
-  document.getElementById('output').innerHTML = '<div class="card" style="padding:40px;text-align:center;color:var(--muted)"><b style="color:var(--text)">Paste a Luma event or click a seeded event</b><div>You’ll get 6 stages with short X, long X, and Nostr copy.</div></div>';
+  document.getElementById('output').innerHTML = '<div class="card" style="padding:40px;text-align:center;color:var(--muted)"><b style="color:var(--text)">Paste a Luma event URL to start</b><div>You’ll get 6 stages with short X, long X, and Nostr copy.</div></div>';
   document.getElementById('checklist-panel').hidden = true;
   setGenerateLabel();
 }
