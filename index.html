@@ -486,6 +486,15 @@ function lumaToEvent(input, fallbackUrl){
     image_url: Array.isArray(jsonLd?.image) ? jsonLd.image[0] : (jsonLd?.image || nextEv.cover_url || '')
   };
 }
+function buildProxyAttempts(url){
+  const enc = encodeURIComponent(url);
+  return [
+    { name:'codetabs',   kind:'raw',  url:`https://api.codetabs.com/v1/proxy?quest=${enc}` },
+    { name:'corsproxy',  kind:'raw',  url:`https://corsproxy.io/?url=${enc}` },
+    { name:'allorigins', kind:'json', url:`https://api.allorigins.win/get?url=${enc}` },
+    { name:'jina',       kind:'raw',  url:`https://r.jina.ai/${url}` }
+  ];
+}
 /* ENGINE-END */
 
 const FALLBACK_DATA = {
@@ -624,36 +633,18 @@ async function fetchTextWithTimeout(url, timeoutMs){
     clearTimeout(timer);
   }
 }
+async function runAttempt(a){
+  const text = await fetchTextWithTimeout(a.url, 15000);
+  const body = a.kind === 'json' ? (JSON.parse(text).contents || '') : text;
+  if(!(body.includes('application/ld+json') || body.includes('__NEXT_DATA__') || /^Title:/mi.test(body)))
+    throw new Error('no event data');
+  const ev = lumaToEvent(body, '');
+  if(!validateEvent(ev)) throw new Error('unparseable');
+  return body;
+}
 async function fetchLumaHtml(url){
-  const attempts = [
-    {
-      name: 'html proxy',
-      run: () => fetchTextWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, 15000)
-    },
-    {
-      name: 'alternate html proxy',
-      run: async () => {
-        const text = await fetchTextWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, 15000);
-        const data = JSON.parse(text);
-        return data.contents || '';
-      }
-    },
-    {
-      name: 'reader',
-      run: () => fetchTextWithTimeout(`https://r.jina.ai/http://r.jina.ai/http://${url}`, 20000)
-    }
-  ];
-  const errors = [];
-  for(const attempt of attempts){
-    try{
-      const text = await attempt.run();
-      if(text && (text.includes('application/ld+json') || text.includes('__NEXT_DATA__') || /^Title:/mi.test(text))) return text;
-      throw new Error('empty event data');
-    }catch(e){
-      errors.push(`${attempt.name}: ${e.message || e}`);
-    }
-  }
-  throw new Error(errors.join('; '));
+  const attempts = buildProxyAttempts(url);
+  return await Promise.any(attempts.map(a => runAttempt(a)));
 }
 async function importLumaUrl(){
   const url = normalizeLumaUrl(val('luma_import_url') || val('luma'));

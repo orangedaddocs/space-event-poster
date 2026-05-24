@@ -148,3 +148,16 @@ test('lumaToEvent uses __NEXT_DATA__ timezone for display', () => {
 test('lumaToEvent throws when no title found', () => {
   assert.throws(() => engine.lumaToEvent('<html></html>', ''), /title/i);
 });
+
+test('buildProxyAttempts includes 4 no-key proxies with correct Jina URL', () => {
+  const url = 'https://luma.com/mrxb609z';
+  const attempts = engine.buildProxyAttempts(url);
+  const urls = attempts.map(a => a.url);
+  assert.equal(attempts.length, 4);
+  assert.ok(urls.some(u => u.includes('api.codetabs.com/v1/proxy?quest=')));
+  assert.ok(urls.some(u => u.includes('api.allorigins.win/get?url=')));
+  assert.ok(urls.some(u => u.includes('corsproxy.io/?url=')));
+  const jina = urls.find(u => u.includes('r.jina.ai'));
+  assert.equal(jina, 'https://r.jina.ai/https://luma.com/mrxb609z');
+  assert.doesNotMatch(jina, /r\.jina\.ai\/http:\/\/r\.jina\.ai/);
+});
