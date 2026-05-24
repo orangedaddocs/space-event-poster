@@ -114,3 +114,37 @@ test('validateEvent requires a title and (date or description)', () => {
   assert.equal(engine.validateEvent({ title:'' }), false);
   assert.equal(engine.validateEvent({ title:'X' }), false);
 });
+
+const NEXT_HTML = `<html><body>
+<script id="__NEXT_DATA__" type="application/json">
+{"props":{"pageProps":{"somethingNew":{"event":{"name":"Denver BitDevs",
+ "start_at":"2026-06-04T17:00:00-06:00","timezone":"America/Denver",
+ "url":"https://luma.com/yj1xgw3q"}}}}}
+</` + `script></body></html>`;
+
+test('deepFindEvent finds an event-shaped object regardless of path', () => {
+  const ev = engine.deepFindEvent(NEXT_HTML);
+  assert.equal(ev.name, 'Denver BitDevs');
+  assert.equal(ev.start_at, '2026-06-04T17:00:00-06:00');
+  assert.equal(ev.timezone, 'America/Denver');
+});
+
+test('lumaToEvent builds a normalized event from JSON-LD html', () => {
+  const ev = engine.lumaToEvent(JSONLD_HTML, 'https://luma.com/pks2tmn1');
+  assert.equal(ev.title, 'Bitcoin in Healthcare');
+  assert.equal(ev.date_iso, '2026-05-28T18:30:00-06:00');
+  assert.match(ev.date_display, /6:30 PM MDT/);
+  assert.equal(ev.luma_url, 'https://luma.com/pks2tmn1');
+  assert.ok(engine.validateEvent(ev));
+});
+
+test('lumaToEvent uses __NEXT_DATA__ timezone for display', () => {
+  const ev = engine.lumaToEvent(NEXT_HTML, 'https://luma.com/yj1xgw3q');
+  assert.equal(ev.title, 'Denver BitDevs');
+  assert.equal(ev.tz, 'America/Denver');
+  assert.match(ev.date_display, /5:00 PM MDT/);
+});
+
+test('lumaToEvent throws when no title found', () => {
+  assert.throws(() => engine.lumaToEvent('<html></html>', ''), /title/i);
+});

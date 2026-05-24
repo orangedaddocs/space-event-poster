@@ -15,7 +15,8 @@ const EXPORTS = [
   'decodeEntities', 'normalizeLumaUrl', 'lumaSlug', 'fmtHashtags',
   'formatEventTime', 'timezoneConversions',
   'enforceXLimit', 'stripLinks', 'sanitizeVenueText',
-  'parseJsonLdEvent', 'validateEvent'
+  'parseJsonLdEvent', 'validateEvent',
+  'deepFindEvent', 'lumaToEvent'
 ];
 
 const code = m[1] + `\n;globalThis.__engine = { ${EXPORTS.join(', ')} };`;
