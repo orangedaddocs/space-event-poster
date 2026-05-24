@@ -256,6 +256,29 @@ test('speaker X handle tags on X posts and npub tags on Nostr, in both styles', 
   }
 });
 
+test('short X does not truncate the hook at an abbreviation like "Dr."', () => {
+  const ev = { ...EV, hook: 'Dr. Smith shows how to run a clinic on a Bitcoin standard. Come learn how.' };
+  const announce = engine.compose(ev, 'conversational', 'educational')[0];
+  assert.match(announce.x, /Dr\. Smith shows how to run a clinic on a Bitcoin standard\./);
+});
+
+test('reader fallback ignores the "Title: … · Luma" line and captures the body', () => {
+  const reader = [
+    'Title: My Event · Luma',
+    'URL Source: https://luma.com/abc',
+    'About Event',
+    'Come learn about sovereign computing.',
+    'We will cover hash rate heating.',
+    'Hosted By',
+    'Someone'
+  ].join('\n');
+  const ev = engine.lumaToEvent(reader, 'https://luma.com/abc');
+  assert.doesNotMatch(ev.description, /Title:/);
+  assert.doesNotMatch(ev.description, /· Luma/);
+  assert.match(ev.description, /sovereign computing/);
+  assert.match(ev.description, /hash rate heating/);
+});
+
 test('buildStage returns empty strings for an unknown stage id', () => {
   const out = engine.buildStage({ id:'nope', label:'X', when:'' }, EV, 'conversational', 'educational', 0);
   assert.equal(out.x, '');

@@ -407,14 +407,18 @@ function readerTitle(raw){
 function readerDescription(lines){
   const cleaned = lines.map(cleanReaderLine).filter(Boolean);
   const aboutIndex = cleaned.findIndex(line => /^About Event$/i.test(line));
-  const skip = /^(Markdown Content:|Presented by|Hosted By|Register|Share|Add to Calendar|Calendar of events|See what's|Welcome!|To join|Subscribe|Contact the Host|Report Event)$/i;
+  const skip = /^(Title:|URL Source:|Markdown Content:|Presented by|Hosted By|Register|Share|Add to Calendar|Calendar of events|See what's|Welcome!|To join|Subscribe|Contact the Host|Report Event)/i;
   const dateish = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{1,2}|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\b/i;
   const pool = aboutIndex >= 0 ? cleaned.slice(aboutIndex + 1) : cleaned;
+  const body = [];
   for(const line of pool){
-    if(skip.test(line) || dateish.test(line) || /^https?:\/\//i.test(line)) continue;
-    if(line.length > 20) return sanitizeVenueText(line);
+    if(/·\s*Luma$/i.test(line)) continue;            // skip the page-title line ("… · Luma")
+    if(/^https?:\/\/\S+$/i.test(line)) continue;      // skip a standalone URL line
+    if(skip.test(line) || dateish.test(line)){ if(body.length) break; else continue; }
+    body.push(line);
+    if(body.join('\n').length > 1200) break;          // enough of the body captured
   }
-  return '';
+  return sanitizeVenueText(body.join('\n').trim());
 }
 function readerDate(lines){
   const cleaned = lines.map(cleanReaderLine).filter(Boolean);
@@ -497,7 +501,7 @@ function buildProxyAttempts(url){
     { name:'codetabs',   kind:'raw',  url:`https://api.codetabs.com/v1/proxy?quest=${enc}` },
     { name:'corsproxy',  kind:'raw',  url:`https://corsproxy.io/?url=${enc}` },
     { name:'allorigins', kind:'json', url:`https://api.allorigins.win/get?url=${enc}` },
-    { name:'jina',       kind:'raw',  url:`https://r.jina.ai/${url}` }
+    { name:'jina',       kind:'raw',  reader:true, url:`https://r.jina.ai/${url}` }
   ];
 }
 const TONES = {
@@ -558,7 +562,17 @@ function buildStage(stage, ev, style, tone, seed){
 
   // Block-based assembly: `tight` joins lines within a block (\n); `para` joins
   // non-empty blocks with a blank line (\n\n) so posts breathe like real social copy.
-  const firstSentence = s => { const t = (s || '').trim(); const m = t.match(/^[\s\S]*?[.?!](?=\s|$)/); return (m ? m[0] : t).trim(); };
+  const firstSentence = s => {
+    const t = (s || '').trim();
+    if(!t) return '';
+    const ABBR = /\b(?:Dr|Mr|Mrs|Ms|Prof|Sr|Jr|St|vs|etc|Inc|Co|Ltd|No|e\.g|i\.e)\.$/i;  // don't break on these
+    const re = /[.?!](?:\s+|$)/g; let m;
+    while((m = re.exec(t)) !== null){
+      const head = t.slice(0, m.index + 1).trim();
+      if(!ABBR.test(head)) return head;
+    }
+    return t;
+  };
   const tight = (...l) => l.filter(Boolean).join('\n');
   const para = (...blocks) => blocks.filter(b => b && String(b).trim()).join('\n\n');
   // paras: turn an imported description's single line breaks into blank-line-separated
@@ -700,7 +714,14 @@ async function runAttempt(a){
 }
 async function fetchLumaHtml(url){
   const attempts = buildProxyAttempts(url);
-  return await Promise.any(attempts.map(a => runAttempt(a)));
+  const htmlFirst = attempts.filter(a => !a.reader);      // full HTML carries JSON-LD = the complete description
+  const readerLast = attempts.filter(a => a.reader);      // reader markdown is a weaker last resort
+  try{
+    return await Promise.any(htmlFirst.map(a => runAttempt(a)));
+  }catch(e){
+    if(readerLast.length) return await Promise.any(readerLast.map(a => runAttempt(a)));
+    throw e;
+  }
 }
 async function importLumaUrl(){
   const url = normalizeLumaUrl(val('luma_import_url') || val('luma'));
