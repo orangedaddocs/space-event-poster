@@ -506,7 +506,7 @@ function buildProxyAttempts(url){
 }
 const TONES = {
   educational: {
-    openers: ['Ever wonder', 'Here’s a good one:', 'Worth knowing about:', 'New on the calendar — and worth your time:'],
+    openers: ['Here’s a good one:', 'Worth knowing about:', 'On the calendar:', 'New one worth your time:'],
     ctas: ['Free to RSVP →', 'Save your seat →', 'Details + RSVP →', 'Sign up to attend →'],
     signoffs: ['Bring your questions.', 'Come curious.']
   },
@@ -557,66 +557,84 @@ function buildStage(stage, ev, style, tone, seed){
   const yt = ev.youtube_url || '';
   const hook = ev.hook || '';
 
-  const J = (...lines) => lines.filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  // Block-based assembly: `tight` joins lines within a block (\n); `para` joins
+  // non-empty blocks with a blank line (\n\n) so posts breathe like real social copy.
+  const firstSentence = s => { const t = (s || '').trim(); const m = t.match(/^[\s\S]*?[.?!](?=\s|$)/); return (m ? m[0] : t).trim(); };
+  const tight = (...l) => l.filter(Boolean).join('\n');
+  const para = (...blocks) => blocks.filter(b => b && String(b).trim()).join('\n\n');
 
   switch(stage.id){
     case 'announce':
       return {
         x: conv
-          ? J(`${opener} ${hook || ev.title}`, ev.speaker && `${ev.speaker} is showing us.`, date && `📅 ${date}`, (rsvp ? `${cta} ${rsvp}` : cta), tags)
-          : J(`New event: ${ev.title}`, date && `📅 ${date}`, `📍 ${venue}`, tag && `🎤 ${tag}`, (rsvp ? `${cta} ${rsvp}` : cta), tags),
-        xlong: stripLinks(J(ev.title, '', hook || 'A new one is on the calendar.', '',
-          ev.speaker ? `With ${ev.speaker}${ev.speaker_org ? ` (${ev.speaker_org})` : ''}.` : '', date, venue, '',
-          signoff, '', "RSVP's in the reply 👇", yt && 'Stream link in the reply too.', tags)),
-        nostr: J(`${opener} ${ev.title}`, '', date && `📅 ${date}`, `📍 ${venue}`,
-          ev.speaker && `🎤 ${ev.speaker}`, ev.speaker_nostr && `nostr:${ev.speaker_nostr}`, '', hook, '', cta, rsvp, '', tags)
+          ? para(firstSentence(hook) || `${opener} ${ev.title}`,
+                 tight(ev.speaker && `${ev.speaker} is showing us.`, date && `📅 ${date}`),
+                 (rsvp ? `${cta} ${rsvp}` : cta), tags)
+          : para(`New event: ${ev.title}`,
+                 tight(date && `📅 ${date}`, `📍 ${venue}`, tag && `🎤 ${tag}`),
+                 (rsvp ? `${cta} ${rsvp}` : cta), tags),
+        xlong: stripLinks(para(ev.title,
+          hook || 'A new one is on the calendar.',
+          tight(ev.speaker && `With ${ev.speaker}${ev.speaker_org ? ` (${ev.speaker_org})` : ''}.`, date && `📅 ${date}`, `📍 ${venue}`),
+          signoff,
+          tight("RSVP’s in the reply 👇", yt && 'Stream link in the reply too.'),
+          tags)),
+        nostr: para(ev.title,
+          tight(date && `📅 ${date}`, `📍 ${venue}`, ev.speaker && `🎤 ${ev.speaker}`, ev.speaker_nostr && `nostr:${ev.speaker_nostr}`),
+          hook,
+          tight(cta, rsvp),
+          tags)
       };
     case 'rem7': {
       const d = Math.max(daysUntil(ev.date_iso), 7);
       return {
-        x: conv ? J(`One week out: ${ev.title}.`, hook, (rsvp && `RSVP: ${rsvp}`), tags)
-                : J(`${d} days out — ${ev.title}`, date, (rsvp && `RSVP: ${rsvp}`), tags),
-        xlong: stripLinks(J(`${d} days out: ${ev.title}`, '', date, ev.speaker && `With ${ev.speaker}.`, '',
-          hook || 'Easy to miss, worth having on the calendar.', '', 'Know someone who’d enjoy it? Bring them.', '', signoff, tags)),
-        nostr: J(`${d} days out: ${ev.title}`, date, hook, '', (rsvp && `RSVP: ${rsvp}`), '', tags)
+        x: conv ? para(`One week out: ${ev.title}.`, firstSentence(hook), (rsvp && `RSVP: ${rsvp}`), tags)
+                : para(`${d} days out — ${ev.title}`, date, (rsvp && `RSVP: ${rsvp}`), tags),
+        xlong: stripLinks(para(`${d} days out: ${ev.title}`,
+          tight(date, ev.speaker && `With ${ev.speaker}.`),
+          hook || 'Easy to miss, worth having on the calendar.',
+          'Know someone who’d enjoy it? Bring them.', signoff, tags)),
+        nostr: para(`${d} days out: ${ev.title}`, date, hook, (rsvp && `RSVP: ${rsvp}`), tags)
       };
     }
     case 'rem1':
       return {
-        x: conv ? J(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}.`, `${date}`, (rsvp ? `Last call to RSVP → ${rsvp}` : cta), tags)
-                : J(`Tomorrow — ${ev.title}`, `${date} · ${venue}`, tag, rsvp, tags),
-        xlong: stripLinks(J(`Tomorrow: ${ev.title}`, '', date, venue, ev.speaker && `With ${ev.speaker}.`, '',
-          hook || 'One more nudge before this happens.', '', 'RSVP if you’re coming and bring someone curious.', '', "Link’s in the reply 👇", tags)),
-        nostr: J(`Tomorrow: ${ev.title}`, ev.speaker && `With ${ev.speaker}`, date, `📍 ${venue}`, '', (rsvp && `Last chance to RSVP:`), rsvp, '', tags)
+        x: conv ? para(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}.`, date, (rsvp ? `Last call to RSVP → ${rsvp}` : cta), tags)
+                : para(`Tomorrow — ${ev.title}`, tight(date, `📍 ${venue}`, tag), rsvp, tags),
+        xlong: stripLinks(para(`Tomorrow: ${ev.title}`,
+          tight(date, venue, ev.speaker && `With ${ev.speaker}.`),
+          hook || 'One more nudge before this happens.',
+          'RSVP if you’re coming and bring someone curious.', "Link’s in the reply 👇", tags)),
+        nostr: para(`Tomorrow: ${ev.title}`, tight(ev.speaker && `With ${ev.speaker}`, date, `📍 ${venue}`), (rsvp && tight('Last chance to RSVP:', rsvp)), tags)
       };
     case 'live':
       return {
-        x: conv ? J(`We’re live 🔴 ${ev.title}`, conversions, `📍 ${venue}${yt ? ' — or catch the stream.' : ''}`, tags)
-                : J(`LIVE — ${ev.title}`, `🔴 ${conversions}`, `📍 ${venue}`, tags),
-        xlong: stripLinks(J(`We’re live: ${ev.title}`, '', conversions, hook, '',
+        x: conv ? para(`We’re live 🔴 ${ev.title}`, conversions, `📍 ${venue}${yt ? ' — or catch the stream.' : ''}`, tags)
+                : para(`LIVE — ${ev.title}`, `🔴 ${conversions}`, `📍 ${venue}`, tags),
+        xlong: stripLinks(para(`We’re live: ${ev.title}`, conversions, firstSentence(hook),
           yt ? 'Streaming now — link in the reply.' : 'If you’re nearby, now’s the time to come through.', venue, tags)),
-        nostr: J(`Live now 🔴 ${ev.title}`, conversions, '', hook, '', `📍 ${venue}`, yt && `Stream: ${yt}`, '', tags)
+        nostr: para(`Live now 🔴 ${ev.title}`, conversions, hook, tight(`📍 ${venue}`, yt && `Stream: ${yt}`), tags)
       };
     case 'followup':
       return {
-        x: conv ? J(`${ev.title} — what a night.`, `The thing that stuck with me: [the one thing worth taking away]`, 'Recording soon 👇', tags)
-                : J(`Recap: ${ev.title}${tag ? ` · ${tag}` : ''}`, `Big takeaway: [the one thing worth taking away]`, 'Recording soon.', tags),
-        xlong: stripLinks(J(`${ev.title} — thanks to everyone who came out.`, '',
-          'The one thing worth carrying forward: [the one thing worth taking away]', '',
-          'Good questions, good people, good night.', '', 'Recording goes in the reply when it’s ready.', tags)),
-        nostr: J(`Recap: ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}`, '',
-          'The thing worth carrying home: [the one thing worth taking away]', '', 'Recording soon. Next time, bring a friend.', '', tags)
+        x: conv ? para(`${ev.title} — what a night.`, 'The thing that stuck with me: [the one thing worth taking away]', 'Recording soon 👇', tags)
+                : para(`Recap: ${ev.title}${tag ? ` · ${tag}` : ''}`, 'Big takeaway: [the one thing worth taking away]', 'Recording soon.', tags),
+        xlong: stripLinks(para(`${ev.title} — thanks to everyone who came out.`,
+          'The one thing worth carrying forward: [the one thing worth taking away]',
+          'Good questions, good people, good night.', 'Recording goes in the reply when it’s ready.', tags)),
+        nostr: para(`Recap: ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}`,
+          'The thing worth carrying home: [the one thing worth taking away]', 'Recording soon. Next time, bring a friend.', tags)
       };
     case 'recap':
       return {
-        x: conv ? J(`The recording from ${ev.title} is up.`, 'If you missed it, the one bit worth your time: [one moment worth watching]', 'Link in the reply 👇', tags)
-                : J(`Recording’s up: ${ev.title}`, 'Watch for: [one moment worth watching]', 'Link in the reply.', tags),
-        xlong: stripLinks(J(`The recording from ${ev.title} is up.`, '',
-          'For everyone who couldn’t make it — watch for: [one moment worth watching]', '',
-          'The best events keep helping people after the room clears.', '', 'Link in the reply 👇', tags)),
-        nostr: J(`The recording from ${ev.title} is up ⚡`, '',
-          'If you couldn’t make it, here’s the one bit worth your time: [one moment worth watching]', '',
-          `Watch: ${yt || '[paste YouTube link]'}`, '', tags)
+        x: conv ? para(`The recording from ${ev.title} is up.`, 'If you missed it, the one bit worth your time: [one moment worth watching]', 'Link in the reply 👇', tags)
+                : para(`Recording’s up: ${ev.title}`, 'Watch for: [one moment worth watching]', 'Link in the reply.', tags),
+        xlong: stripLinks(para(`The recording from ${ev.title} is up.`,
+          'For everyone who couldn’t make it — watch for: [one moment worth watching]',
+          'The best events keep helping people after the room clears.', 'Link in the reply 👇', tags)),
+        nostr: para(`The recording from ${ev.title} is up ⚡`,
+          'If you couldn’t make it, here’s the one bit worth your time: [one moment worth watching]',
+          `Watch: ${yt || '[paste YouTube link]'}`, tags)
       };
     default:
       return { x:'', xlong:'', nostr:'' };
