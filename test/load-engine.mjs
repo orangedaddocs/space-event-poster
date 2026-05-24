@@ -18,7 +18,8 @@ const EXPORTS = [
   'parseJsonLdEvent', 'validateEvent',
   'deepFindEvent', 'lumaToEvent',
   'buildProxyAttempts',
-  'TONES', 'STYLES'
+  'TONES', 'STYLES',
+  'STAGES', 'compose', 'buildStage'
 ];
 
 const code = m[1] + `\n;globalThis.__engine = { ${EXPORTS.join(', ')} };`;

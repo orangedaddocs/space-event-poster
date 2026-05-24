@@ -183,3 +183,63 @@ test('TONES has the four reworked tones, each with opener+cta+signoff arrays', (
 test('STYLES are structured + conversational', () => {
   assert.deepEqual(Object.keys(engine.STYLES).sort(), ['conversational', 'structured']);
 });
+
+const EV = {
+  title:'Bitcoin in Healthcare', speaker:'Dr. Noah Kaufman', speaker_x:'@noah', speaker_nostr:'',
+  date_iso:'2026-05-28T19:00:00-06:00', tz:'America/Denver',
+  date_display:'Thu, May 28 · 7:00 PM MDT', hook:'How do you build a practice on a Bitcoin standard?',
+  luma_url:'https://luma.com/pks2tmn1', youtube_url:'', hashtags:'#Bitcoin #Healthcare', venue:'Denver Bitcoin meetup'
+};
+
+test('compose returns 6 stages, each with x/xlong/nostr strings', () => {
+  const posts = engine.compose(EV, 'conversational', 'educational');
+  assert.equal(posts.length, 6);
+  for(const p of posts){
+    assert.equal(typeof p.x, 'string');
+    assert.equal(typeof p.xlong, 'string');
+    assert.equal(typeof p.nostr, 'string');
+    assert.ok(p.stage && p.when);
+  }
+});
+
+test('short X is always <= 280', () => {
+  for(const style of ['structured', 'conversational']){
+    for(const tone of ['educational', 'welcoming', 'cypherpunk', 'punchy']){
+      for(const p of engine.compose(EV, style, tone)) assert.ok(p.x.length <= 280, `${style}/${tone}/${p.stage}=${p.x.length}`);
+    }
+  }
+});
+
+test('long X never contains a URL (link-light)', () => {
+  for(const p of engine.compose(EV, 'conversational', 'educational')) assert.doesNotMatch(p.xlong, /https?:\/\/|luma\.com/);
+});
+
+test('pre-event stages have no blank placeholders; post-event have at most one', () => {
+  const posts = engine.compose(EV, 'conversational', 'educational');
+  const byStage = Object.fromEntries(posts.map(p => [p.stage, p]));
+  const preStages = ['Announcement', '7-day reminder', '24-hr reminder', 'Live update'];
+  for(const s of preStages){
+    const all = byStage[s].x + byStage[s].xlong + byStage[s].nostr;
+    assert.doesNotMatch(all, /\[[^\]]+\]/, `unexpected blank in ${s}`);
+  }
+  assert.match(byStage['Follow-up'].x, /\[[^\]]+\]/);
+});
+
+test('announcement includes the RSVP URL on short X and Nostr', () => {
+  const a = engine.compose(EV, 'structured', 'educational')[0];
+  assert.match(a.x, /luma\.com\/pks2tmn1/);
+  assert.match(a.nostr, /luma\.com\/pks2tmn1/);
+});
+
+test('live stage shows timezone conversions', () => {
+  const live = engine.compose(EV, 'conversational', 'punchy').find(p => p.stage === 'Live update');
+  assert.match(live.x, /9:00 PM EDT/);
+});
+
+test('youtube recap: X says link in reply, nostr embeds url', () => {
+  const ev = { ...EV, youtube_url:'https://youtube.com/watch?v=abc' };
+  const recap = engine.compose(ev, 'conversational', 'educational').find(p => p.stage === 'YouTube recap');
+  assert.match(recap.x, /reply/i);
+  assert.doesNotMatch(recap.x, /youtube\.com/);
+  assert.match(recap.nostr, /youtube\.com\/watch\?v=abc/);
+});

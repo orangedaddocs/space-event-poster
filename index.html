@@ -537,6 +537,107 @@ const TONES = {
   }
 };
 const STYLES = { structured:{ id:'structured' }, conversational:{ id:'conversational' } };
+
+function pickWith(arr, seed){ return arr[Math.abs(seed) % arr.length]; }
+function speakerTag(ev){ return ev.speaker_x ? (ev.speaker_x.startsWith('@') ? ev.speaker_x : '@'+ev.speaker_x) : (ev.speaker || ''); }
+function venueLabel(ev){ return ev.venue || 'Denver Bitcoin meetup'; }
+function daysUntil(iso){ if(!iso) return 7; return Math.max(0, Math.round((new Date(iso) - new Date()) / 86400000)); }
+
+const STAGES = [
+  { id:'announce', label:'Announcement', when:'post now' },
+  { id:'rem7',     label:'7-day reminder', when:'7 days before' },
+  { id:'rem1',     label:'24-hr reminder', when:'1 day before' },
+  { id:'live',     label:'Live update', when:'day-of, at start' },
+  { id:'followup', label:'Follow-up', when:'day after' },
+  { id:'recap',    label:'YouTube recap', when:'after recording is live' }
+];
+
+function buildStage(stage, ev, style, tone, seed){
+  const T = TONES[tone] || TONES.educational;
+  const conv = style === 'conversational';
+  const opener = pickWith(T.openers, seed);
+  const cta = pickWith(T.ctas, seed + 1);
+  const signoff = pickWith(T.signoffs, seed + 2);
+  const tag = speakerTag(ev);
+  const venue = venueLabel(ev);
+  const tags = ev.hashtags || '';
+  const rsvp = ev.luma_url || '';
+  const date = ev.date_display || '';
+  const conversions = ev.date_iso ? timezoneConversions(ev.date_iso, ev.tz) : (date || '');
+  const yt = ev.youtube_url || '';
+  const hook = ev.hook || '';
+
+  const J = (...lines) => lines.filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+  switch(stage.id){
+    case 'announce':
+      return {
+        x: conv
+          ? J(`${opener} ${hook || ev.title}`, ev.speaker && `${ev.speaker} is showing us.`, date && `📅 ${date}`, `${cta} ${rsvp}`, tags)
+          : J(`New event: ${ev.title}`, date && `📅 ${date}`, `📍 ${venue}`, tag && `🎤 ${tag}`, `${cta} ${rsvp}`, tags),
+        xlong: stripLinks(J(ev.title, '', hook || 'A new one is on the calendar.', '',
+          ev.speaker ? `With ${ev.speaker}${ev.speaker_org ? ` (${ev.speaker_org})` : ''}.` : '', date, venue, '',
+          signoff, '', "RSVP's in the reply 👇", yt && 'Stream link in the reply too.', tags)),
+        nostr: J(`${opener} ${ev.title}`, '', date && `📅 ${date}`, `📍 ${venue}`,
+          ev.speaker && `🎤 ${ev.speaker}`, ev.speaker_nostr && `nostr:${ev.speaker_nostr}`, '', hook, '', cta, rsvp, '', tags)
+      };
+    case 'rem7': {
+      const d = Math.max(daysUntil(ev.date_iso), 7);
+      return {
+        x: conv ? J(`One week out: ${ev.title}.`, hook, `RSVP: ${rsvp}`, tags)
+                : J(`${d} days out — ${ev.title}`, date, `RSVP: ${rsvp}`, tags),
+        xlong: stripLinks(J(`${d} days out: ${ev.title}`, '', date, ev.speaker && `With ${ev.speaker}.`, '',
+          hook || 'Easy to miss, worth having on the calendar.', '', 'Know someone who’d enjoy it? Bring them.', '', signoff, tags)),
+        nostr: J(`${d} days out: ${ev.title}`, date, hook, '', `RSVP: ${rsvp}`, '', tags)
+      };
+    }
+    case 'rem1':
+      return {
+        x: conv ? J(`Tomorrow. ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}.`, `${date}`, `Last call to RSVP → ${rsvp}`, tags)
+                : J(`Tomorrow — ${ev.title}`, `${date} · ${venue}`, tag, `${rsvp}`, tags),
+        xlong: stripLinks(J(`Tomorrow: ${ev.title}`, '', date, venue, ev.speaker && `With ${ev.speaker}.`, '',
+          hook || 'One more nudge before this happens.', '', 'RSVP if you’re coming and bring someone curious.', '', "Link’s in the reply 👇", tags)),
+        nostr: J(`Tomorrow: ${ev.title}`, ev.speaker && `With ${ev.speaker}`, date, `📍 ${venue}`, '', `Last chance to RSVP:`, rsvp, '', tags)
+      };
+    case 'live':
+      return {
+        x: conv ? J(`We’re live 🔴 ${ev.title}`, conversions, `📍 ${venue}${yt ? ' — or catch the stream.' : ''}`, tags)
+                : J(`LIVE — ${ev.title}`, `🔴 ${conversions}`, `📍 ${venue}`, tags),
+        xlong: stripLinks(J(`We’re live: ${ev.title}`, '', conversions, hook, '',
+          yt ? 'Streaming now — link in the reply.' : 'If you’re nearby, now’s the time to come through.', venue, tags)),
+        nostr: J(`Live now 🔴 ${ev.title}`, conversions, '', hook, '', `📍 ${venue}`, yt && `Stream: ${yt}`, '', tags)
+      };
+    case 'followup':
+      return {
+        x: conv ? J(`${ev.title} — what a night.`, `The thing that stuck with me: [the one thing worth taking away]`, 'Recording soon 👇', tags)
+                : J(`Recap: ${ev.title}${tag ? ` · ${tag}` : ''}`, `Big takeaway: [the one thing worth taking away]`, 'Recording soon.', tags),
+        xlong: stripLinks(J(`${ev.title} — thanks to everyone who came out.`, '',
+          'The one thing worth carrying forward: [the one thing worth taking away]', '',
+          'Good questions, good people, good night.', '', 'Recording goes in the reply when it’s ready.', tags)),
+        nostr: J(`Recap: ${ev.title}${ev.speaker ? ` with ${ev.speaker}` : ''}`, '',
+          'The thing worth carrying home: [the one thing worth taking away]', '', 'Recording soon. Next time, bring a friend.', '', tags)
+      };
+    case 'recap':
+      return {
+        x: conv ? J(`The recording from ${ev.title} is up.`, 'If you missed it, the one bit worth your time: [one moment worth watching]', 'Link in the reply 👇', tags)
+                : J(`Recording’s up: ${ev.title}`, 'Watch for: [one moment worth watching]', 'Link in the reply.', tags),
+        xlong: stripLinks(J(`The recording from ${ev.title} is up.`, '',
+          'For everyone who couldn’t make it — watch for: [one moment worth watching]', '',
+          'The best events keep helping people after the room clears.', '', 'Link in the reply 👇', tags)),
+        nostr: J(`The recording from ${ev.title} is up ⚡`, '',
+          'If you couldn’t make it, here’s the one bit worth your time: [one moment worth watching]', '',
+          `Watch: ${yt || '[paste YouTube link]'}`, '', tags)
+      };
+  }
+}
+
+function compose(ev, style, tone, seedBase){
+  const seed = Number.isFinite(seedBase) ? seedBase : 0;
+  return STAGES.map((stage, i) => {
+    const out = buildStage(stage, ev, style, tone, seed + i * 7);
+    return { stage: stage.label, when: stage.when, x: enforceXLimit(out.x), xlong: out.xlong, nostr: out.nostr.trim() };
+  });
+}
 /* ENGINE-END */
 
 const FALLBACK_DATA = {
@@ -598,14 +699,6 @@ let EVENTS = FALLBACK_DATA.events.slice();
 
 /* ---------- Helpers ---------- */
 function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
-function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-function shortTitle(t){ return t.length>40 ? t.slice(0,37)+'…' : t; }
-function daysUntil(iso){
-  if(!iso) return null;
-  const now = new Date();
-  const then = new Date(iso);
-  return Math.max(0, Math.round((then-now)/(1000*60*60*24)));
-}
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg||'Copied'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
 function copy(text){ navigator.clipboard.writeText(text).then(()=>toast('Copied')); }
 function postText(id){
@@ -614,9 +707,6 @@ function postText(id){
 }
 function openXCompose(text){
   window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-}
-function venueLabel(){
-  return [VENUE.name, VENUE.city].filter(Boolean).join(' · ');
 }
 function findSeedByLumaUrl(url){
   const slug = lumaSlug(url);
@@ -693,161 +783,6 @@ function toggleLumaPaste(){
 }
 function cleanupPost(text){
   return (text || '').trim().replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
-}
-
-/* ---------- Post builder ---------- */
-function buildPosts(ev){
-  const tone = TONES[ev.tone] || TONES.educational;
-  const days = ev.date_iso ? daysUntil(ev.date_iso) : 7;
-  const speakerX = ev.speaker_x ? ev.speaker_x.startsWith('@')?ev.speaker_x:('@'+ev.speaker_x) : '';
-  const speakerNostr = ev.speaker_nostr || '';
-  const speakerLine = ev.speaker ? `with ${ev.speaker}${ev.speaker_org?` (${ev.speaker_org})`:''}` : '';
-  const hashtags = ev.hashtags || (VENUE.default_hashtags||[]).join(' ');
-  const lumaShort = ev.luma_url || '';
-  const youtube = ev.youtube_url || '';
-  const titleShort = shortTitle(ev.title || 'our next event');
-  const xReplyLine = lumaShort ? 'RSVP link in reply.' : 'Details in reply.';
-  const ytReplyLine = youtube ? 'YouTube link in reply.' : 'YouTube link goes in the reply when it is live.';
-
-  // ANNOUNCEMENT
-  const announceX = [
-    `${pick(tone.intro)} ${ev.title}`,
-    ev.date_display ? `📅 ${ev.date_display}` : '',
-    `📍 ${venueLabel()}`,
-    speakerX ? `🎤 ${speakerX}` : (ev.speaker ? `🎤 ${ev.speaker}`:''),
-    ev.hook ? `\n${ev.hook}` : '',
-    `\n${pick(tone.cta)} ${lumaShort}`,
-    hashtags ? `\n${hashtags}` : ''
-  ].filter(Boolean).join('\n');
-
-  const announceN = [
-    `${pick(tone.intro)} ${ev.title}`,
-    '',
-    ev.date_display ? `📅 ${ev.date_display}` : '',
-    `📍 ${venueLabel()}`,
-    ev.speaker ? `🎤 ${ev.speaker}${ev.speaker_org?` — ${ev.speaker_org}`:''}` : '',
-    speakerNostr ? `nostr:${speakerNostr}` : '',
-    '',
-    ev.hook || '',
-    '',
-    `${pick(tone.cta)}`,
-    lumaShort,
-    '',
-    hashtags
-  ].filter(x=>x!==undefined && x!==null).join('\n');
-
-  const announceXL = cleanupPost(`${ev.title}
-
-${ev.date_display ? `${ev.date_display}\n` : ''}${speakerLine ? `${speakerLine}\n` : ''}${venueLabel() ? `${venueLabel()}\n` : ''}
-${ev.hook || 'A new event is on the calendar.'}
-
-Why it is worth showing up:
-1. Learn from people doing the work.
-2. Meet other curious builders and Bitcoiners.
-3. Leave with something useful to keep exploring.
-
-${xReplyLine}
-${hashtags}`);
-
-  // 7-DAY
-  const remX = `${pick(tone.reminder).replace('{days}', Math.max(days,7)).replace('{title_short}', titleShort)}\n\n${ev.title} ${speakerLine}\n${ev.date_display||''}\n\nRSVP: ${lumaShort}\n${hashtags}`;
-  const remN = `${pick(tone.reminder).replace('{days}', Math.max(days,7)).replace('{title_short}', titleShort)}\n\n${ev.title}\n${speakerLine}\n${ev.date_display||''}\n\n${ev.hook||''}\n\nRSVP: ${lumaShort}\n\n${hashtags}`;
-  const remXL = cleanupPost(`${Math.max(days,7)} days out: ${ev.title}
-
-${ev.date_display || ''}
-${speakerLine || ''}
-
-${ev.hook || 'This is the kind of event that is easy to miss and worth having on the calendar.'}
-
-If you have a friend who has been asking better questions lately, this is a good one to bring them to.
-
-${xReplyLine}
-${hashtags}`);
-
-  // 24-HR
-  const dayX = `${pick(tone.day)}\n\n${ev.title}\n${ev.date_display||''} · ${venueLabel()}\n${speakerX || (ev.speaker?`w/ ${ev.speaker}`:'')}\n\n${lumaShort}\n${hashtags}`;
-  const dayN = `${pick(tone.day)}\n\n${ev.title}\n${speakerLine}\n${ev.date_display||''}\n📍 ${venueLabel()}\n\nLast chance to RSVP:\n${lumaShort}\n\n${hashtags}`;
-  const dayXL = cleanupPost(`Tomorrow: ${ev.title}
-
-${ev.date_display || ''}
-${venueLabel()}
-${speakerLine || ''}
-
-${ev.hook || 'One more reminder before this one happens.'}
-
-This is the nudge. RSVP if you are coming, bring someone curious, and show up ready for a good conversation.
-
-${xReplyLine}
-${hashtags}`);
-
-  // LIVE
-  const liveX = `${pick(tone.live)} ${speakerX||ev.speaker||''}\n\n"${ev.hook ? ev.hook.slice(0,140) : ev.title}"\n\n📍 ${venueLabel()}\n${hashtags}`;
-  const liveN = `${pick(tone.live)} ${ev.speaker||''}\n\n${ev.title}\n\n${ev.hook||''}\n\n📍 ${venueLabel()}\nCome through if you can.\n\n${hashtags}`;
-  const liveXL = cleanupPost(`${pick(tone.live)} ${ev.title}
-
-${ev.hook || ''}
-
-If you are nearby, now is the time to come through.
-
-${venueLabel()}
-${hashtags}`);
-
-  // FOLLOWUP
-  const fuX = `${pick(tone.followup)} ${ev.title}${speakerX?` · ${speakerX}`:''}\n\nKey takeaways 🧵\n1.\n2.\n3.\n\nRecording dropping soon. Big thanks to everyone who came out.\n${hashtags}`;
-  const fuN = `${pick(tone.followup)} ${ev.title}${ev.speaker?` with ${ev.speaker}`:''}.\n\nThree things worth carrying home:\n1. \n2. \n3. \n\nRecording: [paste link]\n\nNext time, bring a friend.\n\n${hashtags}`;
-  const fuXL = cleanupPost(`${pick(tone.followup)} ${ev.title}
-
-A few takeaways worth carrying forward:
-1.
-2.
-3.
-
-Big thanks to everyone who showed up, asked good questions, and kept the conversation going.
-
-Recording link goes in the reply when it is ready.
-${hashtags}`);
-
-  // YOUTUBE RECAP
-  const ytX = cleanupPost(`Recording is up: ${ev.title}
-
-One useful idea from the conversation:
-
-[add takeaway]
-
-${ytReplyLine}
-${hashtags}`);
-  const ytXL = cleanupPost(`Recording is up from ${ev.title}.
-
-This is the follow-up for everyone who wanted to be there but could not make it.
-
-Watch for:
-1. [add moment or topic]
-2. [add useful quote or idea]
-3. [add practical takeaway]
-
-The best events keep helping people after the room clears. This is the piece that lets the conversation travel.
-
-${ytReplyLine}
-${hashtags}`);
-  const ytN = cleanupPost(`Recording is up: ${ev.title}
-
-Three things worth watching for:
-1. 
-2. 
-3. 
-
-YouTube: ${youtube || '[paste YouTube link]'}
-
-${hashtags}`);
-
-  return [
-    { stage:'Announcement', when:'Now — when event is published', x:enforceXLimit(announceX), xlong:announceXL, nostr:announceN.trim() },
-    { stage:'7-day reminder', when:`7 days before · approx ${days} days out`, x:enforceXLimit(remX), xlong:remXL, nostr:remN.trim() },
-    { stage:'24-hr reminder', when:'1 day before', x:enforceXLimit(dayX), xlong:dayXL, nostr:dayN.trim() },
-    { stage:'Live update', when:'Day-of, at start time', x:enforceXLimit(liveX), xlong:liveXL, nostr:liveN.trim() },
-    { stage:'Follow-up', when:'Day after · before recording is posted', x:enforceXLimit(fuX), xlong:fuXL, nostr:fuN.trim() },
-    { stage:'YouTube recap', when:'After the recording is live', x:enforceXLimit(ytX), xlong:ytXL, nostr:ytN },
-  ];
 }
 
 /* ---------- Render ---------- */
