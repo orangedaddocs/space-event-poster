@@ -3,6 +3,10 @@
 A free, single-file, self-hosted post generator for Luma events.
 Paste a Luma event URL, get a ready-to-copy X + Nostr campaign.
 
+**▶ Use it now → https://orangedaddocs.github.io/event-poster/** — click and start. Or download the single `index.html` and open it; it works exactly the same, fully offline.
+
+🔒 **No AI. No accounts. No tracking.** The tool has no analytics, no pixels, and loads no external scripts or fonts — it's one HTML file you can read end to end. It makes **zero network requests until *you* click "Import from Luma."** Want nothing in the middle at all? Download `index.html` and run it locally — then not even a web host sees you.
+
 > **What it does:** You give it one event. It gives you back a full campaign: short X posts, longer link-light X posts, Nostr posts, and a YouTube recap follow-up. No scheduler required, no API keys, nothing leaves the browser.
 
 ---
@@ -25,16 +29,27 @@ Paste a Luma event URL, get a ready-to-copy X + Nostr campaign.
 
 ## Quick start
 
-### Option 1 — Host on GitHub Pages (recommended, free, ~3 min)
+### Run it locally — most private
 
-1. Create a new GitHub repo (e.g. `event-poster`).
-2. Drop these files in the repo root: `index.html`, `events.json`, `README.md`.
-3. In repo **Settings → Pages → Source**: `main` branch, `/ (root)` → Save.
-4. Wait ~30 seconds. Your tool is live at `https://<your-username>.github.io/event-poster/`.
+Open `index.html` in any browser. Done — it works offline with the built-in example events, and copy works via the `execCommand` fallback. For the full experience (loading `events.json`, clipboard on every browser), serve it from your own machine:
 
-### Option 2 — Use locally
+```
+python3 -m http.server 8787      →  http://localhost:8787
+```
 
-Just open `index.html` in any browser. Done. Copy buttons work on `file://` via the `execCommand` fallback.
+Nothing leaves your machine except the optional Luma import.
+
+### Self-host — sovereign + shareable
+
+It's one static file. Put `index.html` (plus optional `events.json` for your own seeded events) behind any web server you control — your own box or your own domain — so your community can use a URL *you* own.
+
+### GitHub Pages — easiest, but centralized
+
+Free ~3-minute hosting if you don't mind the platform:
+
+1. Push the repo (the app only needs `index.html`; `events.json` is optional).
+2. In repo **Settings → Pages → Source**: `main` branch, `/ (root)` → Save.
+3. Live at `https://<your-username>.github.io/event-poster/`.
 
 ---
 
